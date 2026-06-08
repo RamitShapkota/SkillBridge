@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { globalErrorHandler } from "./middlewares/error.middleware.js";
+import userRouter from "./routes/user.routes.js";
 
 const app = express();
 
@@ -18,5 +19,7 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use(globalErrorHandler);
+
+app.use("/api/v1/users", userRouter);
 
 export { app };
