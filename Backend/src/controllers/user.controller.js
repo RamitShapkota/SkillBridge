@@ -103,15 +103,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
 const loginUser = asyncHandler(async (req, res) => {
-  // req body -> data
-  // email + password
-  // find user
-  // password check
-  // generate tokens
-  // send cookies
-  // response
-
-
+  // Get data from request body
   const { email, password } = req.body || {};
 
   // 1. VALIDATION
@@ -122,23 +114,25 @@ const loginUser = asyncHandler(async (req, res) => {
   const normalizedEmail = email.trim().toLowerCase();
 
   // 2. FIND USER
-  const user = await User.findOne({ email: normalizedEmail });
+  const user = await User.findOne({
+    email: normalizedEmail,
+  });
 
+  // Do not reveal whether email exists
   if (!user) {
-    throw new ApiError(404, "User does not exist");
+    throw new ApiError(401, "Invalid email or password");
   }
 
   // 3. PASSWORD CHECK
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid credentials");
+    throw new ApiError(401, "Invalid email or password");
   }
 
   // 4. GENERATE TOKENS
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    user._id
-  );
+  const { accessToken, refreshToken } =
+    await generateAccessAndRefreshTokens(user._id);
 
   // 5. GET SAFE USER DATA
   const loggedInUser = await User.findById(user._id).select(
@@ -146,17 +140,20 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   if (!loggedInUser) {
-    throw new ApiError(500, "Something went wrong while logging in");
+    throw new ApiError(
+      500,
+      "Something went wrong while logging in"
+    );
   }
 
   // 6. COOKIE OPTIONS
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
   };
 
-  // 7. RESPONSE
+  // 7. SEND RESPONSE
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -166,9 +163,7 @@ const loginUser = asyncHandler(async (req, res) => {
         200,
         {
           user: loggedInUser,
-          role: loggedInUser.role, // student or client
           accessToken,
-          refreshToken,
         },
         "Login successful"
       )
