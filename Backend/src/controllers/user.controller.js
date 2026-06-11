@@ -5,6 +5,25 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 
+
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating refresh and access token"
+    );
+  }
+};
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const isStudentEmail = (email) => {
@@ -80,4 +99,80 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, createdUser, "User registered successfully"));
 });
 
-export { registerUser };
+
+
+
+const loginUser = asyncHandler(async (req, res) => {
+  // req body -> data
+  // email + password
+  // find user
+  // password check
+  // generate tokens
+  // send cookies
+  // response
+
+
+  const { email, password } = req.body || {};
+
+  // 1. VALIDATION
+  if (!email || !password) {
+    throw new ApiError(400, "Email and password are required");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // 2. FIND USER
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
+
+  // 3. PASSWORD CHECK
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid credentials");
+  }
+
+  // 4. GENERATE TOKENS
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  // 5. GET SAFE USER DATA
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  if (!loggedInUser) {
+    throw new ApiError(500, "Something went wrong while logging in");
+  }
+
+  // 6. COOKIE OPTIONS
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  };
+
+  // 7. RESPONSE
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          role: loggedInUser.role, // student or client
+          accessToken,
+          refreshToken,
+        },
+        "Login successful"
+      )
+    );
+});
+
+export { registerUser, loginUser };
