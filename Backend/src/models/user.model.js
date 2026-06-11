@@ -3,49 +3,49 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
-    {
-        fullName: {
-            type: String,
-            required: true,
-            trim: true
-        },
-
-        email: {
-            type: String,
-            required: true,
-            unique: true,
-            lowercase: true,
-            trim: true
-        },
-
-        password: {
-            type: String,
-            required: true
-        },
-
-        role: {
-            type: String,
-            enum: ["student", "client"],
-            required: true
-        },
-
-        isVerified: {
-            type: Boolean,
-            default: false
-        },
-
-        profileCompleted: {
-            type: Boolean,
-            default: false
-        },
-
-        refreshToken: {
-            type: String
-        }
+  {
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    {
-        timestamps: true
-    }
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
+    password: {
+      type: String,
+      required: true,
+    },
+
+    role: {
+      type: String,
+      enum: ["student", "client"],
+      required: true,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    profileCompleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    refreshToken: {
+      type: String,
+    },
+  },
+  {
+    timestamps: true,
+  }
 );
 
 userSchema.pre("save", async function () {
