@@ -2,51 +2,50 @@ import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-const userSchema = new Schema(
-  {
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true, //remove extra spaces from beginning and end of a string
-      index: true, //it improves search speed
+const userSchema = new mongoose.Schema(
+    {
+        fullName: {
+            type: String,
+            required: true,
+            trim: true
+        },
+
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+            trim: true
+        },
+
+        password: {
+            type: String,
+            required: true
+        },
+
+        role: {
+            type: String,
+            enum: ["student", "client"],
+            required: true
+        },
+
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
+
+        profileCompleted: {
+            type: Boolean,
+            default: false
+        },
+
+        refreshToken: {
+            type: String
+        }
     },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-    fullName: {
-      type: String,
-      required: true,
-      trim: true,
-      index: true,
-    },
-    avatar: {
-      type: String, // cloudinary url
-      required: true,
-    },
-    coverImage: {
-      type: String, // cloudinary url
-    },
-    watchHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Video",
-      },
-    ],
-    password: {
-      type: String,
-      required: [true, "Password is required"],
-    },
-    refreshToken: {
-      type: String,
-    },
-  },
-  { timestamps: true }
+    {
+        timestamps: true
+    }
 );
 
 userSchema.pre("save", async function () {
