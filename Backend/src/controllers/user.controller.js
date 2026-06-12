@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 
 
+
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -24,6 +25,8 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 
+
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const isStudentEmail = (email) => {
@@ -31,6 +34,8 @@ const isStudentEmail = (email) => {
   return domain?.toLowerCase().endsWith("edu.np");
 };
 
+
+//for register
 const registerUser = asyncHandler(async (req, res) => {
   let { fullName, email, password, confirmPassword, role } = req.body;
 
@@ -101,6 +106,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
 
+//for log in 
 
 const loginUser = asyncHandler(async (req, res) => {
   // Get data from request body
@@ -170,4 +176,34 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser };
+
+
+
+//for log out
+const logoutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined, //remove from database
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+};
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out"));
+});
+
+export { registerUser, loginUser, logoutUser };
