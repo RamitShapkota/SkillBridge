@@ -1,0 +1,452 @@
+import { useState, useEffect, type ElementType } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { getProfile, subscribeProfile } from "../../data/profileStore";
+import { REVIEWS } from "../../data/reviews";
+import { PROJECTS } from "../../data/projects";
+import { Github, Linkedin, Globe, Star, CheckCircle, Mail, Briefcase } from "lucide-react";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface ProfileViewProps {
+  name: string;
+  initials: string;
+  headline: string;
+  bio: string;
+  verified: boolean;
+  skills: { name: string; verified: boolean }[];
+  rating: number;
+  reviewCount: number;
+  completedProjectsCount: number;
+  github?: string;
+  linkedin?: string;
+  portfolio?: string;
+  email?: string;
+  /** Pass an explicit avatar URL, or omit to auto-read from the profile store */
+  avatarUrl?: string;
+}
+
+// ── Social icon with tooltip ──────────────────────────────────────────────────
+
+function SocialIcon({
+  icon: Icon,
+  label,
+  href,
+}: {
+  icon: ElementType;
+  label: string;
+  href: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <a
+        href={href.startsWith("mailto") ? href : `https://${href}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </a>
+      <AnimatePresence>
+        {hovered && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none z-20"
+          >
+            <div
+              className="bg-slate-900 text-white font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap relative"
+              style={{ fontSize: "0.65rem" }}
+            >
+              {label}
+              <div
+                className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0"
+                style={{
+                  borderLeft: "4px solid transparent",
+                  borderRight: "4px solid transparent",
+                  borderTop: "4px solid #0F172A",
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Section 1: Profile Overview ───────────────────────────────────────────────
+
+function ProfileOverview({ profile }: { profile: ProfileViewProps }) {
+  // Reactively track store avatar so profile photo syncs after Settings save
+  const [storeAvatar, setStoreAvatar] = useState(getProfile().avatarUrl);
+  useEffect(() => subscribeProfile(() => setStoreAvatar(getProfile().avatarUrl)), []);
+  const avatar = profile.avatarUrl ?? storeAvatar;
+
+  const socialLinks = [
+    profile.github && { icon: Github, label: "GitHub", href: profile.github },
+    profile.linkedin && { icon: Linkedin, label: "LinkedIn", href: profile.linkedin },
+    profile.portfolio && { icon: Globe, label: "Portfolio", href: profile.portfolio },
+    profile.email && { icon: Mail, label: "Email", href: `mailto:${profile.email}` },
+  ].filter(Boolean) as { icon: ElementType; label: string; href: string }[];
+
+  return (
+    <div className="bg-white rounded-2xl border border-black/[0.06] shadow-sm p-5">
+      <div className="flex items-start gap-4">
+        <div
+          className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-sm"
+          style={{ background: "linear-gradient(135deg,#2563EB,#14B8A6)" }}
+        >
+          {avatar ? (
+            <img src={avatar} alt={profile.name} className="w-full h-full object-cover" />
+          ) : (
+            <div
+              className="w-full h-full flex items-center justify-center text-white font-bold"
+              style={{ fontSize: "0.9rem" }}
+            >
+              {profile.initials}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2
+              className="text-slate-900"
+              style={{ fontSize: "1.05rem", fontWeight: 800, lineHeight: 1.2 }}
+            >
+              {profile.name}
+            </h2>
+            {profile.verified && (
+              <span
+                className="inline-flex items-center gap-1 text-blue-600 font-semibold"
+                style={{ fontSize: "0.7rem" }}
+              >
+                <CheckCircle className="w-3.5 h-3.5" /> Verified
+              </span>
+            )}
+          </div>
+          <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>
+            {profile.headline}
+          </p>
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            <Star className="w-3.5 h-3.5" fill="#F59E0B" color="#F59E0B" />
+            <span className="text-slate-900 font-semibold" style={{ fontSize: "0.78rem" }}>
+              {profile.rating.toFixed(1)}
+            </span>
+            <span className="text-slate-400" style={{ fontSize: "0.72rem" }}>
+              ({profile.reviewCount} Reviews)
+            </span>
+            <span className="text-slate-300" style={{ fontSize: "0.72rem" }}>
+              ·
+            </span>
+            <span className="text-slate-400" style={{ fontSize: "0.72rem" }}>
+              {profile.completedProjectsCount} Completed Projects
+            </span>
+          </div>
+          {socialLinks.length > 0 && (
+            <div className="flex items-center gap-2 mt-3">
+              {socialLinks.map((link) => (
+                <SocialIcon key={link.label} {...link} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Section 2: About ──────────────────────────────────────────────────────────
+
+function About({ bio }: { bio: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-black/[0.06] shadow-sm p-5">
+      <p className="text-slate-900 font-bold mb-2" style={{ fontSize: "0.85rem" }}>
+        About
+      </p>
+      <p className="text-slate-600 leading-relaxed" style={{ fontSize: "0.82rem" }}>
+        {bio}
+      </p>
+    </div>
+  );
+}
+
+// ── Section 3: Skills ─────────────────────────────────────────────────────────
+
+function Skills({ skills }: { skills: { name: string; verified: boolean }[] }) {
+  const verified = skills.filter((s) => s.verified);
+  const regular = skills.filter((s) => !s.verified);
+  return (
+    <div className="bg-white rounded-2xl border border-black/[0.06] shadow-sm p-5 flex flex-col gap-3">
+      <p className="text-slate-900 font-bold" style={{ fontSize: "0.85rem" }}>
+        Skills
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {verified.map((s) => (
+          <span
+            key={s.name}
+            className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 text-emerald-600 font-semibold px-2.5 py-1.5 rounded-xl"
+            style={{ fontSize: "0.72rem" }}
+          >
+            <CheckCircle className="w-3 h-3 shrink-0" />
+            {s.name}
+            <span style={{ fontSize: "0.58rem", color: "#6EE7B7", fontWeight: 600 }}>Verified</span>
+          </span>
+        ))}
+        {regular.map((s) => (
+          <span
+            key={s.name}
+            className="bg-slate-50 border border-slate-200 text-slate-600 font-medium px-2.5 py-1.5 rounded-xl"
+            style={{ fontSize: "0.72rem" }}
+          >
+            {s.name}
+          </span>
+        ))}
+      </div>
+      <p className="text-slate-300" style={{ fontSize: "0.65rem" }}>
+        Verified skills are earned through completed projects and positive client ratings.
+      </p>
+    </div>
+  );
+}
+
+// ── Section 4: Portfolio & Experience ────────────────────────────────────────
+
+function Portfolio() {
+  const projects = PROJECTS.filter((p) => p.status === "completed");
+
+  return (
+    <div className="bg-white rounded-2xl border border-black/[0.06] shadow-sm p-5 flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-slate-900 font-bold" style={{ fontSize: "0.85rem" }}>
+            Portfolio & Experience
+          </p>
+          <p className="text-slate-400 mt-0.5" style={{ fontSize: "0.68rem" }}>
+            Completed projects and practical experience
+          </p>
+        </div>
+        <span
+          className="bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full"
+          style={{ fontSize: "0.62rem" }}
+        >
+          {projects.length} project{projects.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {projects.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <Briefcase className="w-5 h-5 text-slate-300" />
+          </div>
+          <p className="text-slate-400" style={{ fontSize: "0.78rem" }}>
+            No completed projects yet.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {projects.map((p) => {
+            const review = REVIEWS.find((r) => r.projectId === p.id);
+            return (
+              <motion.div
+                key={p.id}
+                whileHover={{ y: -2, boxShadow: "0 6px 20px rgba(0,0,0,0.07)" }}
+                className="border border-black/[0.06] rounded-2xl p-4 flex flex-col gap-2 transition-all duration-200"
+              >
+                <div className="flex items-start justify-between gap-2 flex-wrap">
+                  <p
+                    className="text-slate-900 font-semibold leading-tight"
+                    style={{ fontSize: "0.82rem" }}
+                  >
+                    {p.title}
+                  </p>
+                  <span
+                    className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-300 font-semibold px-2 py-0.5 rounded-full shrink-0"
+                    style={{ fontSize: "0.55rem" }}
+                  >
+                    <CheckCircle className="w-2.5 h-2.5" /> Completed
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {review && (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3 h-3" fill="#F59E0B" color="#F59E0B" />
+                        <span
+                          className="text-amber-600 font-semibold"
+                          style={{ fontSize: "0.72rem" }}
+                        >
+                          {review.rating}.0
+                        </span>
+                      </div>
+                      <span className="text-slate-200" style={{ fontSize: "0.65rem" }}>
+                        ·
+                      </span>
+                    </>
+                  )}
+                  <span className="text-slate-400" style={{ fontSize: "0.68rem" }}>
+                    {p.category}
+                  </span>
+                </div>
+                {p.description && (
+                  <p
+                    className="text-slate-500 leading-snug line-clamp-2"
+                    style={{ fontSize: "0.75rem" }}
+                  >
+                    {p.description}
+                  </p>
+                )}
+                <p className="text-slate-400" style={{ fontSize: "0.68rem" }}>
+                  {p.skills.join(" • ")}
+                </p>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Section 5: Reviews & Ratings ─────────────────────────────────────────────
+
+const FALLBACK_REVIEWS = [
+  {
+    id: "fr1",
+    clientName: "Dikshya Khanal",
+    clientInitials: "AC",
+    rating: 5,
+    comment: "Excellent communication and delivered before deadline. The quality was outstanding.",
+    submittedAt: "12 Jun 2026",
+  },
+  {
+    id: "fr2",
+    clientName: "Sneha Rao",
+    clientInitials: "SR",
+    rating: 5,
+    comment: "Highly recommended and professional. Will definitely work together again.",
+    submittedAt: "8 Jun 2026",
+  },
+  {
+    id: "fr3",
+    clientName: "Vikram Nair",
+    clientInitials: "VN",
+    rating: 4,
+    comment: "Great work overall. Delivered clean results with good attention to detail.",
+    submittedAt: "29 May 2026",
+  },
+];
+
+function Reviews() {
+  const raw = REVIEWS.filter((r) => r.studentName === "Priya Sharma");
+  const reviews = raw.length > 0 ? raw : FALLBACK_REVIEWS;
+  const avg = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+
+  return (
+    <div className="bg-white rounded-2xl border border-black/[0.06] shadow-sm p-5 flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-slate-900 font-bold" style={{ fontSize: "0.85rem" }}>
+            Reviews & Ratings
+          </p>
+          <p className="text-slate-400 mt-0.5" style={{ fontSize: "0.68rem" }}>
+            Feedback from previous clients
+          </p>
+        </div>
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2">
+          <div className="flex items-center gap-1.5">
+            <Star className="w-3.5 h-3.5" fill="#F59E0B" color="#F59E0B" />
+            <span
+              className="text-amber-600 font-bold"
+              style={{ fontSize: "0.95rem", lineHeight: 1 }}
+            >
+              {avg}
+            </span>
+          </div>
+          <div className="border-l border-amber-200 pl-3">
+            <p className="text-amber-600 font-semibold" style={{ fontSize: "0.72rem" }}>
+              {reviews.length} Reviews
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {reviews.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 py-8 text-center">
+          <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <Star className="w-5 h-5 text-slate-300" />
+          </div>
+          <div>
+            <p className="text-slate-900 font-semibold" style={{ fontSize: "0.82rem" }}>
+              No reviews yet
+            </p>
+            <p className="text-slate-400 mt-0.5" style={{ fontSize: "0.75rem" }}>
+              Complete projects to build your reputation.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {reviews.slice(0, 4).map((r) => (
+            <motion.div
+              key={r.id}
+              whileHover={{ y: -2, boxShadow: "0 6px 20px rgba(0,0,0,0.07)" }}
+              className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-2 transition-all duration-200"
+            >
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold shrink-0"
+                    style={{ fontSize: "0.48rem" }}
+                  >
+                    {r.clientInitials}
+                  </div>
+                  <p className="text-slate-900 font-semibold" style={{ fontSize: "0.8rem" }}>
+                    {r.clientName}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Star className="w-3 h-3" fill="#F59E0B" color="#F59E0B" />
+                  <span className="text-amber-600 font-semibold" style={{ fontSize: "0.72rem" }}>
+                    {r.rating}.0
+                  </span>
+                  <span className="text-slate-300" style={{ fontSize: "0.62rem" }}>
+                    · {r.submittedAt}
+                  </span>
+                </div>
+              </div>
+              <p className="text-slate-600 leading-relaxed" style={{ fontSize: "0.78rem" }}>
+                "{r.comment}"
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main export ───────────────────────────────────────────────────────────────
+
+export function StudentProfileView({
+  profile,
+}: {
+  profile: ProfileViewProps;
+  showReport?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <ProfileOverview profile={profile} />
+      <About bio={profile.bio} />
+      <Skills skills={profile.skills} />
+      <Portfolio />
+      <Reviews />
+    </div>
+  );
+}

@@ -1,0 +1,1202 @@
+﻿import { useState, useMemo, type ElementType } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  Search,
+  X,
+  LayoutGrid,
+  List,
+  User,
+  Clock,
+  Calendar,
+  Tag,
+  ChevronRight,
+  Globe,
+  Layout,
+  Paintbrush,
+  FileText,
+  Monitor,
+  Cpu,
+  CheckCircle,
+  ArrowRight,
+  SlidersHorizontal,
+} from "lucide-react";
+import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
+import { ApplyModal } from "../../app/components/ApplyModal";
+import { ClientInformationCard } from "../../app/components/shared/ClientInformationCard";
+import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
+import { JOB_CATEGORIES, JOB_DURATION_OPTIONS, JOB_SKILL_COLORS } from "../../services/api";
+import type { BrowseJob, JobCategoryId } from "../../types";
+
+// Dummy data
+
+const JOBS: BrowseJob[] = [
+  {
+    id: "j1",
+    title: "Design a Landing Page for an EdTech Startup",
+    category: "ui-ux",
+    description:
+      "We need a clean, modern landing page designed in Figma for our online learning platform. The design must be mobile-responsive and conversion-focused. Deliverable is a full Figma prototype with all screens.",
+    skills: ["Figma", "UI/UX", "Prototyping", "Mobile Design"],
+    budget: "8,000",
+    duration: "7d",
+    deadline: "2026-06-30",
+    complexity: "medium",
+    recommended: true,
+    postedAt: "2 hours ago",
+    requirements:
+      "Please submit a portfolio of at least 2 similar landing page designs. Figma source files must be delivered.",
+  },
+  {
+    id: "j2",
+    title: "Build a React Portfolio Website",
+    category: "web-dev",
+    description:
+      "Looking for a frontend developer to build a personal portfolio website using React and TailwindCSS. Design mockup will be provided. Must be fully responsive and deployed to Vercel.",
+    skills: ["React", "TailwindCSS", "JavaScript", "Vercel"],
+    budget: "6,500",
+    duration: "5d",
+    deadline: "2026-06-28",
+    complexity: "small",
+    recommended: true,
+    postedAt: "4 hours ago",
+    requirements:
+      "Submit your GitHub profile and at least one React project. The codebase must be clean and well-commented.",
+  },
+  {
+    id: "j3",
+    title: "Create a Logo and Brand Identity Pack",
+    category: "graphic",
+    description:
+      "We are a new food delivery startup and need a complete brand identity including a logo, color palette, typography guide, and business card design. All files must be delivered in vector format.",
+    skills: ["Illustrator", "Logo Design", "Branding", "Canva"],
+    budget: "5,000",
+    duration: "5d",
+    deadline: "2026-07-02",
+    complexity: "small",
+    postedAt: "6 hours ago",
+    requirements:
+      "Provide 3 initial logo concepts. We will choose one direction and proceed to refinement.",
+  },
+  {
+    id: "j4",
+    title: "Design a Pitch Deck for Investor Presentation",
+    category: "presentation",
+    description:
+      "Our startup needs a professional 15-slide investor pitch deck in PowerPoint and PDF. The content will be provided. Design must be modern, minimal, and on-brand.",
+    skills: ["MS PowerPoint", "Canva", "Presentation Design"],
+    budget: "4,500",
+    duration: "3d",
+    deadline: "2026-06-25",
+    complexity: "small",
+    recommended: true,
+    postedAt: "1 day ago",
+    requirements:
+      "Study our existing brand colors (blue and white). Slides must use our font and follow a consistent visual language.",
+  },
+  {
+    id: "j5",
+    title: "Write Technical Documentation for REST API",
+    category: "documentation",
+    description:
+      "We need a developer to write comprehensive API documentation for our REST API. Includes endpoint descriptions, request/response examples, authentication guide, and error codes.",
+    skills: ["Technical Writing", "REST API", "Markdown", "Documentation"],
+    budget: "5,500",
+    duration: "7d",
+    deadline: "2026-07-05",
+    complexity: "medium",
+    postedAt: "1 day ago",
+    requirements:
+      "The documentation must follow standard developer-friendly formats. Swagger/OpenAPI experience is a plus.",
+  },
+  {
+    id: "j6",
+    title: "Design Social Media Post Templates",
+    category: "graphic",
+    description:
+      "Create a set of 20 branded social media post templates for Instagram, Facebook, and LinkedIn. Templates should be editable in Canva. Brand colors and fonts will be provided.",
+    skills: ["Canva", "Graphic Design", "Social Media"],
+    budget: "3,500",
+    duration: "3d",
+    deadline: "2026-06-27",
+    complexity: "small",
+    postedAt: "2 days ago",
+    requirements:
+      "Deliver all templates as Canva shareable links. Templates should cover announcements, quotes, and product features.",
+  },
+  {
+    id: "j7",
+    title: "Build a Simple To-Do App with Local Storage",
+    category: "web-dev",
+    description:
+      "Looking for a developer to build a simple task management web app using vanilla JavaScript or React. Must include task creation, editing, deletion, and local storage persistence.",
+    skills: ["JavaScript", "HTML", "CSS", "React"],
+    budget: "3,000",
+    duration: "1d",
+    deadline: "2026-06-24",
+    complexity: "small",
+    recommended: true,
+    postedAt: "2 days ago",
+    requirements: "The app must work without a backend. Clean code and responsive design required.",
+  },
+  {
+    id: "j8",
+    title: "Create UI Prototype for Mobile Banking App",
+    category: "ui-ux",
+    description:
+      "Design a complete mobile UI prototype for a digital banking application. Must include dashboard, transaction history, transfer flow, and profile screens. Figma deliverable required.",
+    skills: ["Figma", "Mobile UI", "UI/UX", "Prototyping"],
+    budget: "12,000",
+    duration: "14d",
+    deadline: "2026-07-10",
+    complexity: "medium",
+    postedAt: "3 days ago",
+    requirements:
+      "Follow iOS/Android design guidelines. Must include both light and dark mode designs.",
+  },
+  {
+    id: "j9",
+    title: "Set Up a WordPress Website with Theme Customization",
+    category: "other",
+    description:
+      "Need someone to install, configure, and customize a WordPress website for a local restaurant. Includes theme setup, plugin installation, menu pages, and contact form.",
+    skills: ["WordPress", "HTML", "CSS"],
+    budget: "4,000",
+    duration: "3d",
+    deadline: "2026-06-26",
+    complexity: "small",
+    postedAt: "3 days ago",
+    requirements: "Hosting and domain are already set up. You will be given admin access.",
+  },
+  {
+    id: "j10",
+    title: "Design Product Catalog in Canva",
+    category: "presentation",
+    description:
+      "Create a 10-page digital product catalog for a local handicraft business. Must include product photos (provided), descriptions, and pricing in a clean, professional layout.",
+    skills: ["Canva", "Layout Design", "Graphic Design"],
+    budget: "2,500",
+    duration: "3d",
+    deadline: "2026-06-26",
+    complexity: "small",
+    postedAt: "4 days ago",
+    requirements:
+      "All product images and text will be provided. The final file must be exported as PDF.",
+  },
+  {
+    id: "j11",
+    title: "Develop a Landing Page with Tailwind CSS",
+    category: "web-dev",
+    description:
+      "Convert a provided Figma design into a fully responsive HTML and Tailwind CSS landing page. Pixel-perfect implementation expected with smooth scroll and simple animations.",
+    skills: ["HTML", "TailwindCSS", "JavaScript", "Figma"],
+    budget: "5,000",
+    duration: "3d",
+    deadline: "2026-06-27",
+    complexity: "small",
+    recommended: true,
+    postedAt: "4 days ago",
+    requirements:
+      "The Figma file will be shared upon hiring. All animations must be subtle and professional.",
+  },
+  {
+    id: "j12",
+    title: "Data Entry and Spreadsheet Formatting",
+    category: "other",
+    description:
+      "Enter 500 product records into a Google Sheet from a provided PDF. Includes formatting, categorization, and formula setup for inventory tracking.",
+    skills: ["MS Excel", "Data Entry", "Google Sheets"],
+    budget: "2,000",
+    duration: "1d",
+    deadline: "2026-06-23",
+    complexity: "small",
+    postedAt: "5 days ago",
+    requirements: "Accuracy is critical. All entries must be double-checked before submission.",
+  },
+];
+
+// Config
+
+const CATEGORY_CONFIG: Record<
+  JobCategoryId,
+  {
+    label: string;
+    icon: ElementType;
+    color: string;
+    bg: string;
+    border: string;
+  }
+> = {
+  "web-dev": {
+    label: JOB_CATEGORIES[0].label,
+    icon: Globe,
+    color: "#2563EB",
+    bg: "#EFF6FF",
+    border: "#BFDBFE",
+  },
+  "ui-ux": {
+    label: JOB_CATEGORIES[1].label,
+    icon: Layout,
+    color: "#14B8A6",
+    bg: "#F0FDFA",
+    border: "#99F6E4",
+  },
+  graphic: {
+    label: JOB_CATEGORIES[2].label,
+    icon: Paintbrush,
+    color: "#7C3AED",
+    bg: "#F5F3FF",
+    border: "#DDD6FE",
+  },
+  documentation: {
+    label: JOB_CATEGORIES[3].label,
+    icon: FileText,
+    color: "#059669",
+    bg: "#ECFDF5",
+    border: "#6EE7B7",
+  },
+  presentation: {
+    label: JOB_CATEGORIES[4].label,
+    icon: Monitor,
+    color: "#D97706",
+    bg: "#FFFBEB",
+    border: "#FDE68A",
+  },
+  other: {
+    label: JOB_CATEGORIES[5].label,
+    icon: Cpu,
+    color: "#64748B",
+    bg: "#F8FAFC",
+    border: "#CBD5E1",
+  },
+};
+
+const DURATIONS = JOB_DURATION_OPTIONS;
+
+// Small components
+
+function SkillChip({ skill, index }: { skill: string; index: number }) {
+  const skillColor = JOB_SKILL_COLORS[index % JOB_SKILL_COLORS.length];
+  return (
+    <span
+      className="px-2 py-0.5 rounded-lg font-semibold shrink-0"
+      style={{
+        background: skillColor.bg,
+        color: skillColor.color,
+        fontSize: "0.65rem",
+      }}
+    >
+      {skill}
+    </span>
+  );
+}
+
+function CategoryBadge({ category }: { category: JobCategoryId }) {
+  const categoryConfig = CATEGORY_CONFIG[category];
+  if (!categoryConfig) return null;
+  const Icon = categoryConfig.icon;
+  return (
+    <div
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border"
+      style={{
+        background: categoryConfig.bg,
+        color: categoryConfig.color,
+        borderColor: categoryConfig.border,
+        fontSize: "0.65rem",
+        fontWeight: 700,
+      }}
+    >
+      <Icon className="w-3 h-3" />
+      {categoryConfig.label}
+    </div>
+  );
+}
+
+// Job Card (grid)
+
+function JobCard({
+  job,
+  onView,
+  selected,
+}: {
+  job: BrowseJob;
+  onView: () => void;
+  selected: boolean;
+}) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -2, boxShadow: "0 6px 20px rgba(0,0,0,0.07)" }}
+      className={`group relative bg-white rounded-2xl border flex flex-col gap-4 p-5 cursor-pointer transition-shadow duration-300 ${
+        selected
+          ? "border-blue-600 shadow-lg shadow-blue-100/50"
+          : "border-black/[0.06] shadow-sm hover:shadow-xl hover:border-blue-200"
+      }`}
+      onClick={onView}
+    >
+      {/* Recommended badge */}
+      {job.recommended && (
+        <div
+          className="absolute -top-2.5 left-4 inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-600 font-bold px-2.5 py-0.5 rounded-full"
+          style={{ fontSize: "0.58rem" }}
+        >
+          Recommended
+        </div>
+      )}
+
+      {/* Top row */}
+      <div className="flex items-start pt-1">
+        <CategoryBadge category={job.category} />
+      </div>
+
+      {/* Title */}
+      <h3
+        className="text-slate-900 leading-snug line-clamp-2"
+        style={{ fontSize: "0.9rem", fontWeight: 700 }}
+      >
+        {job.title}
+      </h3>
+
+      {/* Description */}
+      <p
+        className="text-slate-500 leading-relaxed line-clamp-2 flex-1"
+        style={{ fontSize: "0.78rem" }}
+      >
+        {job.description}
+      </p>
+
+      {/* Skills */}
+      <div className="flex flex-wrap gap-1.5">
+        {job.skills.slice(0, 3).map((s, i) => (
+          <SkillChip key={s} skill={s} index={i} />
+        ))}
+        {job.skills.length > 3 && (
+          <span
+            className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-400 font-semibold"
+            style={{ fontSize: "0.65rem" }}
+          >
+            +{job.skills.length - 3}
+          </span>
+        )}
+      </div>
+
+      {/* Meta */}
+      <div className="flex items-center gap-3 pt-1 border-t border-black/[0.04] flex-wrap">
+        <div className="flex items-center gap-1">
+          <Tag className="w-3 h-3 text-slate-400" />
+          <span className="text-slate-900 font-bold" style={{ fontSize: "0.72rem" }}>
+            Rs. {job.budget}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3 text-slate-400" />
+          <span className="text-slate-500" style={{ fontSize: "0.7rem" }}>
+            {DURATIONS.find((d) => d.value === job.duration)?.label}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 ml-auto">
+          <span className="text-slate-400" style={{ fontSize: "0.65rem" }}>
+            {job.postedAt}
+          </span>
+        </div>
+      </div>
+
+      {/* View details */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onView();
+        }}
+        className="w-full flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-blue-50 text-blue-600 font-semibold py-2.5 rounded-xl transition-colors duration-200 group-hover:bg-blue-50"
+        style={{ fontSize: "0.78rem" }}
+      >
+        View Details
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </motion.div>
+  );
+}
+
+// Job Card (list)
+
+function JobCardList({
+  job,
+  onView,
+  selected,
+}: {
+  job: BrowseJob;
+  onView: () => void;
+  selected: boolean;
+}) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      onClick={onView}
+      className={`group relative bg-white rounded-2xl border flex items-start gap-5 p-5 cursor-pointer transition-all duration-300 ${
+        selected
+          ? "border-blue-600 shadow-lg shadow-blue-100/50"
+          : "border-black/[0.06] shadow-sm hover:shadow-xl hover:border-blue-200 hover:-translate-y-0.5"
+      }`}
+    >
+      {/* Recommended badge */}
+      {job.recommended && (
+        <div
+          className="absolute -top-2.5 left-4 inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-600 font-bold px-2.5 py-0.5 rounded-full"
+          style={{ fontSize: "0.58rem" }}
+        >
+          Recommended
+        </div>
+      )}
+
+      {/* Left: content */}
+      <div className="flex-1 min-w-0 flex flex-col gap-2.5 pt-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <CategoryBadge category={job.category} />
+          <span className="text-slate-400" style={{ fontSize: "0.65rem" }}>
+            {job.postedAt}
+          </span>
+        </div>
+        <h3
+          className="text-slate-900 leading-snug"
+          style={{ fontSize: "0.95rem", fontWeight: 700 }}
+        >
+          {job.title}
+        </h3>
+        <p className="text-slate-500 leading-relaxed line-clamp-1" style={{ fontSize: "0.78rem" }}>
+          {job.description}
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {job.skills.slice(0, 4).map((s, i) => (
+            <SkillChip key={s} skill={s} index={i} />
+          ))}
+          {job.skills.length > 4 && (
+            <span
+              className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-400 font-semibold"
+              style={{ fontSize: "0.65rem" }}
+            >
+              +{job.skills.length - 4}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Right: meta + actions */}
+      <div className="flex flex-col items-end gap-3 shrink-0">
+        <div className="text-right flex flex-col gap-1">
+          <p className="text-slate-900 font-bold" style={{ fontSize: "0.82rem" }}>
+            Rs. {job.budget}
+          </p>
+          <p className="text-slate-500" style={{ fontSize: "0.7rem" }}>
+            {DURATIONS.find((d) => d.value === job.duration)?.label}
+          </p>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onView();
+          }}
+          className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 font-semibold px-3.5 py-1.5 rounded-xl hover:bg-blue-100 transition-colors"
+          style={{ fontSize: "0.75rem" }}
+        >
+          View <ChevronRight className="w-3 h-3" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Job detail panel
+
+function JobDetailPanel({
+  job,
+  onClose,
+  onApply,
+}: {
+  job: BrowseJob;
+  onClose: () => void;
+  onApply: () => void;
+}) {
+  const durLabel = DURATIONS.find((d) => d.value === job.duration)?.label;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 32 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 32 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="hidden lg:flex flex-col bg-white rounded-2xl border border-black/[0.06] shadow-xl overflow-hidden shrink-0"
+      style={{
+        width: 400,
+        maxHeight: "calc(100vh - 8rem)",
+        position: "sticky",
+        top: "1.5rem",
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 p-5 border-b border-black/[0.05]">
+        <div className="flex flex-col gap-2 min-w-0">
+          {job.recommended && (
+            <div
+              className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-600 font-bold px-2 py-0.5 rounded-full w-fit"
+              style={{ fontSize: "0.58rem" }}
+            >
+              Recommended
+            </div>
+          )}
+          <CategoryBadge category={job.category} />
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-50 shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Body — scrollable */}
+      <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+        {/* Title */}
+        <h2
+          className="text-slate-900 leading-snug"
+          style={{ fontSize: "1.05rem", fontWeight: 800 }}
+        >
+          {job.title}
+        </h2>
+
+        {/* Key details grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            {
+              label: "Budget",
+              value: `Rs. ${job.budget}`,
+              icon: Tag,
+              color: "#2563EB",
+              bg: "#EFF6FF",
+            },
+            {
+              label: "Duration",
+              value: durLabel ?? "",
+              icon: Clock,
+              color: "#14B8A6",
+              bg: "#F0FDFA",
+            },
+            {
+              label: "Deadline",
+              value: job.deadline,
+              icon: Calendar,
+              color: "#D97706",
+              bg: "#FFFBEB",
+            },
+            {
+              label: "Complexity",
+              value: job.complexity === "small" ? "Small Task" : "Medium Task",
+              icon: SlidersHorizontal,
+              color: "#7C3AED",
+              bg: "#F5F3FF",
+            },
+          ].map((d) => (
+            <div
+              key={d.label}
+              className="flex items-center gap-2.5 bg-slate-50 rounded-xl p-3 border border-black/[0.04]"
+            >
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: d.bg }}
+              >
+                <d.icon className="w-3.5 h-3.5" style={{ color: d.color }} />
+              </div>
+              <div>
+                <p className="text-slate-400" style={{ fontSize: "0.62rem", fontWeight: 600 }}>
+                  {d.label}
+                </p>
+                <p className="text-slate-900 font-semibold" style={{ fontSize: "0.75rem" }}>
+                  {d.value}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Description */}
+        <div>
+          <p className="text-slate-900 font-bold mb-2" style={{ fontSize: "0.82rem" }}>
+            Job Description
+          </p>
+          <p className="text-slate-600 leading-relaxed" style={{ fontSize: "0.8rem" }}>
+            {job.description}
+          </p>
+        </div>
+
+        {/* Skills */}
+        <div>
+          <p className="text-slate-900 font-bold mb-2.5" style={{ fontSize: "0.82rem" }}>
+            Required Skills
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {job.skills.map((s, i) => (
+              <SkillChip key={s} skill={s} index={i} />
+            ))}
+          </div>
+        </div>
+
+        {/* Client Requirements */}
+        {job.requirements && (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <p className="text-slate-900 font-bold mb-1.5" style={{ fontSize: "0.82rem" }}>
+              Client Requirements
+            </p>
+            <p className="text-slate-500 leading-relaxed" style={{ fontSize: "0.78rem" }}>
+              {job.requirements}
+            </p>
+          </div>
+        )}
+
+        {/* Attached files placeholder */}
+        <div>
+          <p className="text-slate-900 font-bold mb-2" style={{ fontSize: "0.82rem" }}>
+            Attached Files
+          </p>
+          <div className="flex flex-col items-center justify-center gap-2 bg-slate-50 border border-dashed border-slate-200 rounded-xl py-5">
+            <FileText className="w-5 h-5 text-slate-300" />
+            <p className="text-slate-400" style={{ fontSize: "0.75rem" }}>
+              No files attached
+            </p>
+          </div>
+        </div>
+
+        {/* Client Information Card */}
+        <ClientInformationCard
+          client={{
+            name: "Dikshya Khanal",
+            initials: "DK",
+            location: "Kathmandu, Nepal",
+            about:
+              "Looking for talented students to help build educational software and digital products.",
+            jobsPosted: 8,
+            projectsCompleted: 5,
+            joinedDate: "Jun 2026",
+          }}
+        />
+      </div>
+
+      {/* Sticky footer */}
+      <div className="p-4 border-t border-black/[0.05] flex gap-3">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={onApply}
+          className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors shadow-md hover:shadow-blue-200 hover:shadow-lg"
+          style={{ fontSize: "0.875rem" }}
+        >
+          Apply Now
+          <ArrowRight className="w-4 h-4" />
+        </motion.button>
+        <button
+          onClick={onClose}
+          className="px-3 py-3 rounded-xl border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-all"
+          style={{ fontSize: "0.75rem" }}
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Mobile detail modal
+
+function MobileDetailModal({ job, onClose }: { job: BrowseJob; onClose: () => void }) {
+  const durLabel = DURATIONS.find((d) => d.value === job.duration)?.label;
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 lg:hidden flex items-end"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-t-3xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+        >
+          <div className="flex items-center justify-between p-5 border-b border-black/[0.05]">
+            <CategoryBadge category={job.category} />
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+            <h2 className="text-slate-900" style={{ fontSize: "1.05rem", fontWeight: 800 }}>
+              {job.title}
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-blue-50 rounded-xl p-3">
+                <p className="text-slate-400" style={{ fontSize: "0.6rem", fontWeight: 600 }}>
+                  Budget
+                </p>
+                <p className="text-blue-600 font-bold" style={{ fontSize: "0.82rem" }}>
+                  Rs. {job.budget}
+                </p>
+              </div>
+              <div className="bg-teal-50 rounded-xl p-3">
+                <p className="text-slate-400" style={{ fontSize: "0.6rem", fontWeight: 600 }}>
+                  Duration
+                </p>
+                <p className="text-teal-500 font-bold" style={{ fontSize: "0.82rem" }}>
+                  {durLabel}
+                </p>
+              </div>
+            </div>
+            <p className="text-slate-600 leading-relaxed" style={{ fontSize: "0.8rem" }}>
+              {job.description}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {job.skills.map((s, i) => (
+                <SkillChip key={s} skill={s} index={i} />
+              ))}
+            </div>
+            {job.requirements && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-slate-900 font-semibold mb-1" style={{ fontSize: "0.72rem" }}>
+                  Client Requirements
+                </p>
+                <p className="text-slate-500" style={{ fontSize: "0.78rem" }}>
+                  {job.requirements}
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="p-4 border-t border-black/[0.05]">
+            <button
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 rounded-xl"
+              style={{ fontSize: "0.875rem" }}
+            >
+              Apply for this Job <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// Empty state
+
+function EmptyState({ onClear }: { onClear: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center justify-center gap-4 py-20 text-center"
+    >
+      <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center">
+        <Search className="w-9 h-9 text-slate-300" />
+      </div>
+      <div>
+        <p className="text-slate-900 font-bold" style={{ fontSize: "1rem" }}>
+          No matching jobs found
+        </p>
+        <p className="text-slate-500 mt-1" style={{ fontSize: "0.85rem" }}>
+          Try adjusting your filters or search keyword.
+        </p>
+      </div>
+      <button
+        onClick={onClear}
+        className="inline-flex items-center gap-2 bg-white text-blue-600 font-semibold px-5 py-2.5 rounded-xl border border-blue-200 hover:bg-blue-50 transition-colors"
+        style={{ fontSize: "0.85rem" }}
+      >
+        Clear all filters
+      </button>
+    </motion.div>
+  );
+}
+
+// Filter chip
+
+function FilterChip({
+  label,
+  active,
+  onClick,
+  color = "#2563EB",
+  bg = "#EFF6FF",
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  color?: string;
+  bg?: string;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.94 }}
+      transition={{ duration: 0.12 }}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border font-semibold transition-all duration-200 whitespace-nowrap"
+      style={{
+        background: active ? bg : "#F8FAFC",
+        color: active ? color : "#64748B",
+        borderColor: active ? color : "#E2E8F0",
+        boxShadow: active ? `0 0 0 2px ${color}18` : "none",
+        fontSize: "0.75rem",
+      }}
+    >
+      {active && <CheckCircle className="w-3 h-3" style={{ color }} />}
+      {label}
+    </motion.button>
+  );
+}
+
+// Auth-required modal (reusable for both guest and student views)
+
+export function GuestApplyModal({ onClose, jobId }: { onClose: () => void; jobId?: string }) {
+  const returnParam = jobId ? `?returnTo=/browse&jobId=${jobId}` : "";
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-5 text-center"
+      >
+        <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto">
+          <User className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+          <p className="text-slate-900 font-bold" style={{ fontSize: "0.95rem" }}>
+            Student Account Required
+          </p>
+          <p className="text-slate-500 mt-1.5 leading-relaxed" style={{ fontSize: "0.82rem" }}>
+            Please sign in or create a student account to apply for jobs on SkillBridge.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <a
+            href={`/login${returnParam}`}
+            className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors text-center"
+            style={{ fontSize: "0.875rem" }}
+          >
+            Login
+          </a>
+          <a
+            href={`/register${returnParam}`}
+            className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-900 font-semibold hover:bg-slate-50 transition-colors text-center"
+            style={{ fontSize: "0.875rem" }}
+          >
+            Create Student Account
+          </a>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-slate-400 hover:text-slate-500 transition-colors"
+          style={{ fontSize: "0.78rem" }}
+        >
+          Close
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// Core browse-jobs content (shared by student and guest layouts)
+
+export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
+  const [query, setQuery] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [complexity, setComplexity] = useState<string[]>([]);
+  const [durations, setDurations] = useState<string[]>([]);
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [pendingJobId, setPendingJobId] = useState<string | undefined>(undefined);
+
+  const handleApply = (jobId: string) => {
+    if (isGuest) {
+      setPendingJobId(jobId);
+      setShowGuestModal(true);
+      return;
+    }
+    setApplyingJobId(jobId);
+  };
+
+  const toggleArr = (arr: string[], setArr: (a: string[]) => void, v: string) =>
+    setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+
+  const filtered = useMemo(() => {
+    return JOBS.filter((job) => {
+      const q = query.toLowerCase();
+      const matchesQuery =
+        !q ||
+        job.title.toLowerCase().includes(q) ||
+        job.skills.some((s) => s.toLowerCase().includes(q)) ||
+        job.description.toLowerCase().includes(q);
+      const matchesCat = !categories.length || categories.includes(job.category);
+      const matchesComp = !complexity.length || complexity.includes(job.complexity);
+      const matchesDur = !durations.length || durations.includes(job.duration);
+      return matchesQuery && matchesCat && matchesComp && matchesDur;
+    });
+  }, [query, categories, complexity, durations]);
+
+  const selectedJob = JOBS.find((j) => j.id === selectedId) ?? null;
+  const hasFilters = query || categories.length || complexity.length || durations.length;
+
+  const clearAll = () => {
+    setQuery("");
+    setCategories([]);
+    setComplexity([]);
+    setDurations([]);
+  };
+
+  return (
+    <>
+      <div className="flex gap-6 items-start">
+        {/* Main column */}
+        <div className="flex-1 min-w-0 flex flex-col gap-5">
+          {!isGuest && <VerificationReminderCard />}
+
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search jobs by title, skill, or keyword..."
+              className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-12 py-4 text-slate-900 placeholder-slate-300 outline-none transition-all duration-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10 focus:shadow-lg shadow-sm"
+              style={{ fontSize: "0.9rem" }}
+            />
+            <AnimatePresence>
+              {query && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onClick={() => setQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white border border-black/[0.05] rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+            {/* Categories */}
+            <div className="flex items-start gap-3">
+              <span
+                className="text-slate-400 font-semibold pt-1 shrink-0"
+                style={{ fontSize: "0.7rem", width: 72 }}
+              >
+                Category
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(CATEGORY_CONFIG).map(([val, cfg]) => (
+                  <FilterChip
+                    key={val}
+                    label={cfg.label}
+                    active={categories.includes(val)}
+                    onClick={() => toggleArr(categories, setCategories, val)}
+                    color={cfg.color}
+                    bg={cfg.bg}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-black/[0.04]" />
+
+            {/* Complexity + Duration */}
+            <div className="flex flex-wrap gap-6">
+              <div className="flex items-center gap-3">
+                <span
+                  className="text-slate-400 font-semibold shrink-0"
+                  style={{ fontSize: "0.7rem", width: 72 }}
+                >
+                  Complexity
+                </span>
+                <div className="flex gap-2">
+                  {[
+                    { v: "small", l: "Small Task" },
+                    { v: "medium", l: "Medium Task" },
+                  ].map((o) => (
+                    <FilterChip
+                      key={o.v}
+                      label={o.l}
+                      active={complexity.includes(o.v)}
+                      onClick={() => toggleArr(complexity, setComplexity, o.v)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span
+                  className="text-slate-400 font-semibold pt-1 shrink-0"
+                  style={{ fontSize: "0.7rem", width: 60 }}
+                >
+                  Duration
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {DURATIONS.map((d) => (
+                    <FilterChip
+                      key={d.value}
+                      label={d.label}
+                      active={durations.includes(d.value)}
+                      onClick={() => toggleArr(durations, setDurations, d.value)}
+                      color="#14B8A6"
+                      bg="#F0FDFA"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Clear */}
+            {hasFilters && (
+              <button
+                onClick={clearAll}
+                className="self-end text-red-400 hover:text-red-500 font-semibold transition-colors"
+                style={{ fontSize: "0.75rem" }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {/* Results header */}
+          <div className="flex items-center justify-between">
+            <p className="text-slate-500" style={{ fontSize: "0.82rem" }}>
+              <span className="text-slate-900 font-bold">{filtered.length}</span> job
+              {filtered.length !== 1 ? "s" : ""} found
+            </p>
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+              {(["grid", "list"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`p-2 rounded-lg transition-all duration-200 ${view === v ? "bg-blue-50 text-blue-600" : "text-slate-400 hover:text-slate-500"}`}
+                >
+                  {v === "grid" ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Job grid / list */}
+          {filtered.length === 0 ? (
+            <EmptyState onClear={clearAll} />
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={view}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className={
+                  view === "grid"
+                    ? `grid gap-4 ${selectedJob ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`
+                    : "flex flex-col gap-3"
+                }
+              >
+                <AnimatePresence>
+                  {filtered.map((job) =>
+                    view === "grid" ? (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        onView={() => setSelectedId(selectedId === job.id ? null : job.id)}
+                        selected={selectedId === job.id}
+                      />
+                    ) : (
+                      <JobCardList
+                        key={job.id}
+                        job={job}
+                        onView={() => setSelectedId(selectedId === job.id ? null : job.id)}
+                        selected={selectedId === job.id}
+                      />
+                    )
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
+
+        {/* Detail panel (desktop) */}
+        <AnimatePresence>
+          {selectedJob && (
+            <JobDetailPanel
+              key={selectedJob.id}
+              job={selectedJob}
+              onClose={() => setSelectedId(null)}
+              onApply={() => handleApply(selectedJob.id)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Mobile modal */}
+      {selectedJob && (
+        <div className="lg:hidden">
+          <MobileDetailModal job={selectedJob} onClose={() => setSelectedId(null)} />
+        </div>
+      )}
+
+      {/* Modals */}
+      <AnimatePresence>
+        {applyingJobId &&
+          (() => {
+            const job = JOBS.find((j) => j.id === applyingJobId);
+            return job ? (
+              <ApplyModal key={applyingJobId} job={job} onClose={() => setApplyingJobId(null)} />
+            ) : null;
+          })()}
+        {showGuestModal && (
+          <GuestApplyModal
+            jobId={pendingJobId}
+            onClose={() => {
+              setShowGuestModal(false);
+              setPendingJobId(undefined);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// Student Browse Jobs page (with DashboardLayout)
+
+export default function BrowseJobsPage() {
+  return (
+    <DashboardLayout role="student" title="Browse Jobs" activeNav="browse-jobs">
+      <BrowseJobsCore isGuest={false} />
+    </DashboardLayout>
+  );
+}
