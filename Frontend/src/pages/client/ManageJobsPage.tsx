@@ -16,8 +16,6 @@ import {
   X,
   ChevronDown,
   CheckCircle,
-  Star,
-  ShieldCheck,
   Eye,
   UserCheck,
   XCircle,
@@ -819,20 +817,6 @@ function ApplicationsPanel({
 }
 
 // Job Details panel (read-only)
-
-const DURATION_LABELS: Record<string, string> = {
-  "1d": "1 Day",
-  "3d": "3 Days",
-  "5d": "5 Days",
-  "7d": "7 Days",
-  "14d": "14 Days",
-  custom: "Custom",
-};
-
-const COMPLEXITY_LABELS: Record<string, string> = {
-  small: "Small Task",
-  medium: "Medium Task",
-};
 
 function JobDetailsPanel({
   job,

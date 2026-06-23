@@ -430,7 +430,7 @@ export default function ProjectWorkspacePage() {
   const [demoLink, setDemoLink] = useState(projectData?.demoLink ?? "");
   const [submittedAt, setSubmittedAt] = useState(projectData?.submittedAt ?? "");
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(!!projectData?.submittedAt);
+  const [, setSubmitted] = useState(!!projectData?.submittedAt);
   const [showApprove, setShowApprove] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);

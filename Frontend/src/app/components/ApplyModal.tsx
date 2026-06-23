@@ -9,9 +9,7 @@ import {
   Globe,
   Clock,
   Tag,
-  ShieldCheck,
   ArrowRight,
-  User,
   AlertCircle,
 } from "lucide-react";
 import { JOB_CATEGORY_LABELS, JOB_DURATION_LABELS, JOB_SKILL_COLORS } from "../../services/api";

@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { motion } from "motion/react";
 import {
   ShieldCheck,
@@ -7,8 +6,6 @@ import {
   DollarSign,
   CheckCircle,
   Clock,
-  Layers,
-  Wifi,
 } from "lucide-react";
 
 // ── Inline UI mockups (no fake numbers or dollar amounts) ─────────────────────

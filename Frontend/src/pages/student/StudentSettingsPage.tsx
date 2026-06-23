@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
-import { getProfile, setProfile, subscribeProfile } from "../../app/data/profileStore";
+import { getProfile, setProfile } from "../../app/data/profileStore";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { VerificationForm } from "../../app/components/shared/VerificationForm";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
@@ -582,7 +582,7 @@ function VerificationSection() {
 
 function AccountSection() {
   const [deleteModal, setDeleteModal] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [, setDeleting] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">

@@ -1,10 +1,11 @@
 ﻿import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,6 +24,8 @@ export default function Login() {
 
   // Demo: derive role from email prefix for routing
   const demoRole = form.email.toLowerCase().includes("client") ? "client" : "student";
+  const requestedReturnTo = new URLSearchParams(location.search).get("returnTo");
+  const returnTo = requestedReturnTo?.startsWith("/") ? requestedReturnTo : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +38,7 @@ export default function Login() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      navigate(demoRole === "client" ? "/dashboard/client" : "/dashboard/student");
+      navigate(returnTo ?? (demoRole === "client" ? "/dashboard/client" : "/dashboard/student"));
     }, 1400);
   };
 

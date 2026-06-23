@@ -1,4 +1,3 @@
-﻿import { motion } from "motion/react";
 import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { useNavigate } from "react-router";
 import { Search, Folder, CheckCircle, FileText, ChevronRight } from "lucide-react";

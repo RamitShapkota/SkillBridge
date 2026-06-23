@@ -1,5 +1,5 @@
 ﻿import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
@@ -55,6 +55,8 @@ function InputField({
 // Main page
 
 export default function Register() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [role, setRole] = useState<"student" | "client">("student");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -83,7 +85,12 @@ export default function Register() {
     }
     setErrors({});
     setLoading(true);
-    setTimeout(() => setLoading(false), 1800);
+    const requestedReturnTo = new URLSearchParams(location.search).get("returnTo");
+    const returnTo = requestedReturnTo?.startsWith("/") ? requestedReturnTo : null;
+    setTimeout(() => {
+      setLoading(false);
+      navigate(returnTo ?? (role === "client" ? "/dashboard/client" : "/dashboard/student"));
+    }, 1800);
   };
 
   return (

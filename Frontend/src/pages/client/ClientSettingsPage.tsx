@@ -616,7 +616,7 @@ function KycSection({ onStatusChange }: { onStatusChange?: (s: KycStatus) => voi
 
 function AccountSection() {
   const [deleteModal, setDeleteModal] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [, setDeleting] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">

@@ -1,4 +1,5 @@
 ﻿import { useState, useMemo, type ElementType } from "react";
+import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
@@ -895,20 +896,20 @@ export function GuestApplyModal({ onClose, jobId }: { onClose: () => void; jobId
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          <a
-            href={`/login${returnParam}`}
+          <Link
+            to={`/login${returnParam}`}
             className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors text-center"
             style={{ fontSize: "0.875rem" }}
           >
             Login
-          </a>
-          <a
-            href={`/register${returnParam}`}
+          </Link>
+          <Link
+            to={`/register${returnParam}`}
             className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-900 font-semibold hover:bg-slate-50 transition-colors text-center"
             style={{ fontSize: "0.875rem" }}
           >
             Create Student Account
-          </a>
+          </Link>
         </div>
         <button
           onClick={onClose}
