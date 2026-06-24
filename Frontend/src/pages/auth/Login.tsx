@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
+import { loginUser } from "@/services/auth/authService";
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,24 +24,43 @@ export default function Login() {
     return e;
   };
 
-  // Demo: derive role from email prefix for routing
-  const demoRole = form.email.toLowerCase().includes("client") ? "client" : "student";
-  const requestedReturnTo = new URLSearchParams(location.search).get("returnTo");
-  const returnTo = requestedReturnTo?.startsWith("/") ? requestedReturnTo : null;
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const errs = validate();
+
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
     }
+
     setErrors({});
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const response = await loginUser({
+        email: form.email,
+        password: form.password,
+      });
+
+      const user = response.data.user;
+
+      if (user.role === "student") {
+        navigate("/dashboard/student");
+      }
+
+      if (user.role === "client") {
+        navigate("/dashboard/client");
+      }
+
+      if (user.role === "admin") {
+        navigate("/admin/dashboard");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
       setLoading(false);
-      navigate(returnTo ?? (demoRole === "client" ? "/dashboard/client" : "/dashboard/student"));
-    }, 1400);
+    }
   };
 
   return (

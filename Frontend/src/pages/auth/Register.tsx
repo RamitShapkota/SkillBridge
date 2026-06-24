@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
+import { registerUser } from "@/services/auth/authService";
+
 // Input field component
 
 interface InputFieldProps {
@@ -76,21 +78,46 @@ export default function Register() {
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const e2 = validate();
+
     if (Object.keys(e2).length) {
       setErrors(e2);
       return;
     }
+
     setErrors({});
     setLoading(true);
-    const requestedReturnTo = new URLSearchParams(location.search).get("returnTo");
-    const returnTo = requestedReturnTo?.startsWith("/") ? requestedReturnTo : null;
-    setTimeout(() => {
+
+    try {
+      const response = await registerUser({
+        fullName: form.name,
+        email: form.email,
+        password: form.password,
+        confirmPassword: form.confirm,
+        role,
+      });
+
+      const user = response.data;
+      const requestedReturnTo = new URLSearchParams(location.search).get("returnTo");
+      const returnTo = requestedReturnTo?.startsWith("/") ? requestedReturnTo : null;
+
+      if (user.role === "student") {
+        navigate(returnTo ?? "/dashboard/student");
+      }
+
+      if (user.role === "client") {
+        navigate(returnTo ?? "/dashboard/client");
+      }
+    } catch (error) {
+      setErrors({
+        form: error instanceof Error ? error.message : "Registration failed. Please try again.",
+      });
+    } finally {
       setLoading(false);
-      navigate(returnTo ?? (role === "client" ? "/dashboard/client" : "/dashboard/student"));
-    }, 1800);
+    }
   };
 
   return (
@@ -175,7 +202,7 @@ export default function Register() {
             <InputField
               label="Email Address"
               type="email"
-              placeholder={role === "student" ? "you@university.edu" : "you@gmail.com"}
+              placeholder={role === "student" ? "you@university.edu.np" : "you@gmail.com"}
               value={form.email}
               onChange={set("email")}
               icon={<Mail className="w-4 h-4" />}
@@ -217,6 +244,12 @@ export default function Register() {
                 </button>
               }
             />
+
+            {errors.form && (
+              <p className="text-red-500 font-medium" style={{ fontSize: "0.78rem" }}>
+                {errors.form}
+              </p>
+            )}
 
             <motion.button
               type="submit"

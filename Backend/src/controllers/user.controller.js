@@ -5,8 +5,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
-
-
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -25,15 +23,12 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 
-
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const isStudentEmail = (email) => {
   const domain = email.split("@")[1];
   return domain?.toLowerCase().endsWith("edu.np");
 };
-
 
 //for register
 const registerUser = asyncHandler(async (req, res) => {
@@ -72,7 +67,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   if (password.length < 8) {
-    throw new ApiError(400, "Password must be at least 6 characters");
+    throw new ApiError(400, "Password must be at least 8 characters");
   }
 
   // 7. Duplicate user check
@@ -104,9 +99,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, createdUser, "User registered successfully"));
 });
 
-
-
-//for log in 
+//for log in
 
 const loginUser = asyncHandler(async (req, res) => {
   // Get data from request body
@@ -137,8 +130,9 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   // 4. GENERATE TOKENS
-  const { accessToken, refreshToken } =
-    await generateAccessAndRefreshTokens(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
 
   // 5. GET SAFE USER DATA
   const loggedInUser = await User.findById(user._id).select(
@@ -146,10 +140,7 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   if (!loggedInUser) {
-    throw new ApiError(
-      500,
-      "Something went wrong while logging in"
-    );
+    throw new ApiError(500, "Something went wrong while logging in");
   }
 
   // 6. COOKIE OPTIONS
@@ -170,15 +161,12 @@ const loginUser = asyncHandler(async (req, res) => {
         {
           user: loggedInUser,
           accessToken,
-          refreshToken
+          refreshToken,
         },
         "Login successful"
       )
     );
 });
-
-
-
 
 //for log out
 const logoutUser = asyncHandler(async (req, res) => {
@@ -207,8 +195,6 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User logged Out"));
 });
 
-
-
 // This controller is used to generate a new access token when the old access token expires.
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -235,8 +221,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Refresh token is expired or used");
     }
 
-    const { accessToken, refreshToken } =
-      await generateAccessAndRefreshTokens(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user._id
+    );
 
     const options = {
       httpOnly: true,
@@ -262,10 +249,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, error?.message || "Invalid refresh token");
   }
 });
-
-
-
-
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
@@ -295,8 +278,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "Account details updated successfully"));
 });
-
-
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
@@ -353,5 +334,5 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  changeCurrentPassword
+  changeCurrentPassword,
 };
