@@ -9,6 +9,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "start": "node -r dotenv/config -r ./src/preload.cjs --experimental-json-modules src/index.js",
     "dev": "nodemon -r dotenv/config -r ./src/preload.cjs --experimental-json-modules src/index.js"
   },
   "keywords": [
