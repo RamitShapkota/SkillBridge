@@ -24,44 +24,45 @@ export default function Login() {
     return e;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const errs = validate();
+  const validationErrors = validate();
 
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      return;
+  if (Object.keys(validationErrors).length) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  setErrors({});
+  setLoading(true);
+
+  try {
+    const response = await loginUser({
+      email: form.email,
+      password: form.password,
+    });
+
+    const user = response.data;
+
+    if (user.role === "student") {
+      navigate("/dashboard/student", { replace: true });
+    } else if (user.role === "client") {
+      navigate("/dashboard/client", { replace: true });
+    } else if (user.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
     }
-
-    setErrors({});
-    setLoading(true);
-
-    try {
-      const response = await loginUser({
-        email: form.email,
-        password: form.password,
-      });
-
-      const user = response.data.user;
-
-      if (user.role === "student") {
-        navigate("/dashboard/student");
-      }
-
-      if (user.role === "client") {
-        navigate("/dashboard/client");
-      }
-
-      if (user.role === "admin") {
-        navigate("/admin/dashboard");
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    setErrors({
+      form:
+        error instanceof Error
+          ? error.message
+          : "Login failed. Please try again.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <motion.div

@@ -79,46 +79,45 @@ export default function Register() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const e2 = validate();
+  const validationErrors = validate();
 
-    if (Object.keys(e2).length) {
-      setErrors(e2);
-      return;
+  if (Object.keys(validationErrors).length) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  setErrors({});
+  setLoading(true);
+
+  try {
+    const response = await registerUser({
+      fullName: form.name,
+      email: form.email,
+      password: form.password,
+      confirmPassword: form.confirm,
+      role,
+    });
+
+    const user = response.data;
+
+    if (user.role === "student") {
+      navigate("/dashboard/student", { replace: true });
+    } else if (user.role === "client") {
+      navigate("/dashboard/client", { replace: true });
     }
-
-    setErrors({});
-    setLoading(true);
-
-    try {
-      const response = await registerUser({
-        fullName: form.name,
-        email: form.email,
-        password: form.password,
-        confirmPassword: form.confirm,
-        role,
-      });
-
-      const user = response.data;
-      const requestedReturnTo = new URLSearchParams(location.search).get("returnTo");
-      const returnTo = requestedReturnTo?.startsWith("/") ? requestedReturnTo : null;
-
-      if (user.role === "student") {
-        navigate(returnTo ?? "/dashboard/student");
-      }
-
-      if (user.role === "client") {
-        navigate(returnTo ?? "/dashboard/client");
-      }
-    } catch (error) {
-      setErrors({
-        form: error instanceof Error ? error.message : "Registration failed. Please try again.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (error) {
+    setErrors({
+      form:
+        error instanceof Error
+          ? error.message
+          : "Registration failed. Please try again.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <motion.div
