@@ -15,6 +15,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 const authenticatedRoles = authorizeRoles("student", "client");
+const currentUserRoles = authorizeRoles("student", "client", "admin");
 const logoutRoles = authorizeRoles("student", "client", "admin");
 
 router.route("/register").post(registerUser);
@@ -26,7 +27,7 @@ router.route("/logout").post(verifyJWT, logoutRoles, logoutUser);
 
 router.route("/refresh-token").post(refreshAccessToken);
 
-router.route("/current-user").get(verifyJWT, authenticatedRoles, getCurrentUser);
+router.route("/current-user").get(verifyJWT, currentUserRoles, getCurrentUser);
 
 router.route("/change-password").post(verifyJWT, authenticatedRoles, changeCurrentPassword);
 
