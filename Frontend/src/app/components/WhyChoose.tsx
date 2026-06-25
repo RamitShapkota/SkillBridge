@@ -66,7 +66,11 @@ const principles = [
   },
 ];
 
-export function WhyChoose() {
+type WhyChooseProps = {
+  getStartedPath: string;
+};
+
+export function WhyChoose({ getStartedPath }: WhyChooseProps) {
   return (
     <section id="about" className="py-24 lg:py-32 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -201,7 +205,7 @@ export function WhyChoose() {
             </div>
 
             <Link
-              to="/register"
+              to={getStartedPath}
               className="inline-flex items-center gap-2 bg-slate-900 text-white font-semibold w-fit px-6 py-3 rounded-xl hover:bg-slate-800 transition-colors duration-200 shadow-sm"
               style={{ fontSize: "0.875rem" }}
             >

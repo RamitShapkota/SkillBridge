@@ -25,6 +25,7 @@ import ManageJobsPage from "../pages/client/ManageJobsPage";
 import StudentSettingsPage from "../pages/student/StudentSettingsPage";
 import ClientSettingsPage from "../pages/client/ClientSettingsPage";
 import AuthenticationGuard from "./auth/AuthenticationGuard";
+import PublicAuthGuard from "./auth/PublicAuthGuard";
 
 export const router = createBrowserRouter([
   {
@@ -35,8 +36,22 @@ export const router = createBrowserRouter([
       { path: "p/:username", Component: PublicProfilePage },
       { path: "browse", Component: PublicBrowseJobsPage },
       { path: "forgot-password", Component: ForgotPasswordPage },
-      { path: "register", Component: Register },
-      { path: "login", Component: Login },
+      {
+        path: "register",
+        element: (
+          <PublicAuthGuard page="register">
+            <Register />
+          </PublicAuthGuard>
+        ),
+      },
+      {
+        path: "login",
+        element: (
+          <PublicAuthGuard page="login">
+            <Login />
+          </PublicAuthGuard>
+        ),
+      },
       {
         path: "dashboard/student",
         element: (

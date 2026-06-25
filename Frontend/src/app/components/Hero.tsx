@@ -46,7 +46,12 @@ const floatingCards: FloatingCard[] = [
   },
 ];
 
-export function Hero() {
+type HeroProps = {
+  getStartedPath: string;
+  exploreJobsPath: string;
+};
+
+export function Hero({ getStartedPath, exploreJobsPath }: HeroProps) {
   return (
     <section
       id="home"
@@ -119,14 +124,14 @@ export function Hero() {
             {/* CTAs */}
             <div className="flex flex-wrap gap-3">
               <Link
-                to="/register"
+                to={getStartedPath}
                 className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 text-sm"
               >
                 Get Started Free
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                to="/browse"
+                to={exploreJobsPath}
                 className="inline-flex items-center gap-2 bg-white text-slate-900 font-semibold px-6 py-3 rounded-xl border border-black/10 hover:border-blue-600/30 hover:bg-blue-50 transition-all duration-200 text-sm shadow-sm"
               >
                 Explore Jobs

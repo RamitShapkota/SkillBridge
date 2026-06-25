@@ -1,8 +1,9 @@
 ﻿import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useEffect } from "react";
 import { motion } from "motion/react";
 import { Zap, Lock, Mail, Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { loginUser } from "@/services/auth/authService.js";
+import { getCurrentUser, loginUser } from "@/services/auth/authService.js";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -14,6 +15,22 @@ export default function AdminLoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<NotificationMessage>(null);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const response = await getCurrentUser();
+
+        if (response.data.role === "admin") {
+          navigate("/admin/dashboard", { replace: true });
+        }
+      } catch {
+        // Visitors, students, and clients can still open the admin login page.
+      }
+    };
+
+    checkAdmin();
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

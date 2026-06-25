@@ -3,7 +3,11 @@ import { Link } from "react-router";
 import { motion, useInView } from "motion/react";
 import { ArrowRight, Zap } from "lucide-react";
 
-export function CTA() {
+type CTAProps = {
+  getStartedPath: string;
+};
+
+export function CTA({ getStartedPath }: CTAProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.15 });
 
@@ -61,7 +65,7 @@ export function CTA() {
 
             <div className="flex flex-wrap justify-center gap-4">
               <Link
-                to="/register"
+                to={getStartedPath}
                 className="inline-flex items-center gap-2 bg-white text-blue-700 font-bold px-8 py-4 rounded-xl hover:bg-slate-50 transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95 text-sm"
               >
                 Join SkillBridge Free

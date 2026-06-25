@@ -9,7 +9,12 @@ const navLinks = [
   { label: "About", href: "#about" },
 ];
 
-export function Navbar() {
+type NavbarProps = {
+  getStartedPath: string;
+  loginPath: string;
+};
+
+export function Navbar({ getStartedPath, loginPath }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -58,13 +63,13 @@ export function Navbar() {
           {/* CTA buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Link
-              to="/login"
+              to={loginPath}
               className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors duration-200 px-3 py-1.5"
             >
               Login
             </Link>
             <Link
-              to="/register"
+              to={getStartedPath}
               className="text-sm font-semibold bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm hover:shadow-blue-200 hover:shadow-md active:scale-95"
             >
               Get Started
@@ -97,11 +102,11 @@ export function Navbar() {
               </a>
             ))}
             <div className="flex flex-col gap-2 pt-2 border-t border-black/5">
-              <Link to="/login" className="text-sm font-medium text-slate-500 py-2">
+              <Link to={loginPath} className="text-sm font-medium text-slate-500 py-2">
                 Login
               </Link>
               <Link
-                to="/register"
+                to={getStartedPath}
                 className="text-sm font-semibold bg-blue-600 text-white px-5 py-2.5 rounded-lg text-center"
               >
                 Get Started
