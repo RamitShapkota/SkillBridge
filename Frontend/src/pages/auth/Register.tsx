@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 import { registerUser } from "@/services/auth/authService";
+import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const dashboardPaths = {
   student: "/dashboard/student",
@@ -71,7 +72,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [successMessage, setSuccessMessage] = useState("");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
 
   const set = (field: string) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -92,12 +93,12 @@ export default function Register() {
 
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
-      setSuccessMessage("");
+      setNotification(null);
       return;
     }
 
     setErrors({});
-    setSuccessMessage("");
+    setNotification(null);
     setLoading(true);
 
     try {
@@ -111,19 +112,19 @@ export default function Register() {
 
       const user = response.data;
       if (user.role !== "student" && user.role !== "client") {
-        setErrors({ form: "Unable to find dashboard for this account." });
+        setNotification({ type: "error", text: "Unable to find dashboard for this account." });
         return;
       }
 
       const dashboardPath = dashboardPaths[user.role];
 
-      setSuccessMessage("Account created successfully.");
-      await wait(1000);
+      setNotification({ type: "success", text: "Account created successfully." });
+      await wait(2000);
       navigate(dashboardPath, { replace: true });
     } catch (error) {
-      setSuccessMessage("");
-      setErrors({
-        form: error instanceof Error ? error.message : "Registration failed. Please try again.",
+      setNotification({
+        type: "error",
+        text: error instanceof Error ? error.message : "Registration failed. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -255,18 +256,6 @@ export default function Register() {
               }
             />
 
-            {errors.form && (
-              <p className="text-red-500 font-medium" style={{ fontSize: "0.78rem" }}>
-                {errors.form}
-              </p>
-            )}
-
-            {successMessage && (
-              <p className="text-green-600 font-medium" style={{ fontSize: "0.78rem" }}>
-                {successMessage}
-              </p>
-            )}
-
             <motion.button
               type="submit"
               disabled={loading}
@@ -327,6 +316,7 @@ export default function Register() {
           .
         </p>
       </div>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </motion.div>
   );
 }

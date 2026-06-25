@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 import { loginUser } from "@/services/auth/authService.js";
+import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -14,7 +15,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [successMessage, setSuccessMessage] = useState("");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
 
   const set = (field: string) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -33,12 +34,12 @@ export default function Login() {
 
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
-      setSuccessMessage("");
+      setNotification(null);
       return;
     }
 
     setErrors({});
-    setSuccessMessage("");
+    setNotification(null);
     setLoading(true);
 
     try {
@@ -52,29 +53,25 @@ export default function Login() {
 
       // This login page is only for students and clients
       if (user.role === "admin") {
-        setErrors({
-          form: "Please use the Admin Login page.",
-        });
+        setNotification({ type: "error", text: "Please use the Admin Login page." });
         return;
       }
 
-      setSuccessMessage("Login successful.");
+      setNotification({ type: "success", text: "Login successful." });
 
-      await wait(1000);
+      await wait(2000);
 
       if (user.role === "student") {
         navigate("/dashboard/student", { replace: true });
       } else if (user.role === "client") {
         navigate("/dashboard/client", { replace: true });
       } else {
-        setErrors({
-          form: "Invalid account type.",
-        });
+        setNotification({ type: "error", text: "Invalid account type." });
       }
     } catch (error) {
-      setSuccessMessage("");
-      setErrors({
-        form: error instanceof Error ? error.message : "Login failed. Please try again.",
+      setNotification({
+        type: "error",
+        text: error instanceof Error ? error.message : "Login failed. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -199,18 +196,6 @@ export default function Login() {
               </Link>
             </div>
 
-            {errors.form && (
-              <p className="text-red-500 font-medium" style={{ fontSize: "0.78rem" }}>
-                {errors.form}
-              </p>
-            )}
-
-            {successMessage && (
-              <p className="text-green-600 font-medium" style={{ fontSize: "0.78rem" }}>
-                {successMessage}
-              </p>
-            )}
-
             {/* Submit */}
             <motion.button
               type="submit"
@@ -273,6 +258,7 @@ export default function Login() {
           .
         </p>
       </div>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </motion.div>
   );
 }

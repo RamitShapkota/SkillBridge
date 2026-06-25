@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Zap, Lock, Mail, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { loginUser } from "@/services/auth/authService.js";
+import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -12,14 +13,12 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setError("");
-    setSuccessMessage("");
+    setNotification(null);
     setLoading(true);
 
     try {
@@ -32,17 +31,20 @@ export default function AdminLoginPage() {
       const user = response.data.user;
 
       if (user.role !== "admin") {
-        setError("Only administrators can log in here.");
+        setNotification({ type: "error", text: "Only administrators can log in here." });
         return;
       }
 
-      setSuccessMessage("Login successful.");
-      await wait(1000);
+      setNotification({ type: "success", text: "Login successful." });
+      await wait(2000);
       navigate("/admin/dashboard", {
         replace: true,
       });
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Login failed. Please try again.");
+      setNotification({
+        type: "error",
+        text: error instanceof Error ? error.message : "Login failed. Please try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -127,18 +129,6 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            {error && (
-              <p className="text-red-500 font-medium" style={{ fontSize: "0.78rem" }}>
-                {error}
-              </p>
-            )}
-
-            {successMessage && (
-              <p className="text-green-600 font-medium" style={{ fontSize: "0.78rem" }}>
-                {successMessage}
-              </p>
-            )}
-
             <motion.button
               type="submit"
               disabled={loading}
@@ -178,6 +168,7 @@ export default function AdminLoginPage() {
           </button>
         </p>
       </motion.div>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </div>
   );
 }

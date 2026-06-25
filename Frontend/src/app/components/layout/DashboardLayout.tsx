@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { logoutUser } from "@/services/auth/authService";
+import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -74,11 +75,6 @@ interface DashboardLayoutProps {
   activeNav?: string;
   children: ReactNode;
 }
-
-type LogoutMessage = {
-  type: "success" | "error";
-  text: string;
-} | null;
 
 const roleConfig: Record<DashboardRole, RoleConfig> = {
   student: {
@@ -724,19 +720,19 @@ export function DashboardLayout({
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<DashboardNavId>(activeNav as DashboardNavId);
-  const [logoutMessage, setLogoutMessage] = useState<LogoutMessage>(null);
+  const [notification, setNotification] = useState<NotificationMessage>(null);
 
   const handleLogout = async () => {
-    setLogoutMessage(null);
+    setNotification(null);
 
     try {
       await logoutUser();
-      setLogoutMessage({ type: "success", text: "Logout successful." });
-      await wait(1000);
+      setNotification({ type: "success", text: "Logout successful." });
+      await wait(2000);
       navigate(role === "admin" ? "/admin/login" : "/", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
-      setLogoutMessage({
+      setNotification({
         type: "error",
         text: error instanceof Error ? error.message : "Logout failed. Please try again.",
       });
@@ -774,16 +770,6 @@ export function DashboardLayout({
           onMobileMenuOpen={() => setMobileOpen(true)}
           onLogout={handleLogout}
         />
-        {logoutMessage && (
-          <p
-            className={`px-6 pt-4 lg:px-8 font-medium ${
-              logoutMessage.type === "success" ? "text-green-600" : "text-red-500"
-            }`}
-            style={{ fontSize: "0.78rem" }}
-          >
-            {logoutMessage.text}
-          </p>
-        )}
         <main className="flex-1 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -795,6 +781,7 @@ export function DashboardLayout({
           </motion.div>
         </main>
       </div>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </motion.div>
   );
 }
