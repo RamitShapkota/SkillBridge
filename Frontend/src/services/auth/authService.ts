@@ -88,3 +88,20 @@ export const logoutUser = async () => {
 
   return data;
 };
+
+
+
+export const getCurrentUser = async (): Promise<ApiResponse<AuthUser>> => {
+  const response = await fetch(`${API_URL}/current-user`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
