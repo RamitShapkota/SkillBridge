@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { logoutUser } from "@/services/auth/authService";
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type DashboardRole = "student" | "client" | "admin";
 type DashboardNavId =
@@ -73,6 +74,11 @@ interface DashboardLayoutProps {
   activeNav?: string;
   children: ReactNode;
 }
+
+type LogoutMessage = {
+  type: "success" | "error";
+  text: string;
+} | null;
 
 const roleConfig: Record<DashboardRole, RoleConfig> = {
   student: {
@@ -204,10 +210,12 @@ function Sidebar({
   role,
   activeItem,
   onItemClick,
+  onLogout,
 }: {
   role: DashboardRole;
   activeItem: DashboardNavId;
   onItemClick: (id: DashboardNavId) => void;
+  onLogout: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const expandTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -226,6 +234,11 @@ function Sidebar({
   };
 
   const handleNav = (id: DashboardNavId) => {
+    if (id === "logout") {
+      onLogout();
+      return;
+    }
+
     onItemClick(id);
     const path = getDashboardPath(role, id);
     if (path) navigate(path);
@@ -454,10 +467,12 @@ function TopNavbar({
   title,
   role,
   onMobileMenuOpen,
+  onLogout,
 }: {
   title: string;
   role: DashboardRole;
   onMobileMenuOpen: () => void;
+  onLogout: () => void;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -551,7 +566,10 @@ function TopNavbar({
                 </div>
                 <div className="border-t border-black/[0.05] p-1.5">
                   <button
-                    onClick={() => navigate(config.logoutPath)}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      onLogout();
+                    }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-colors text-left"
                     style={{ fontSize: "0.82rem" }}
                   >
@@ -574,17 +592,25 @@ function MobileDrawer({
   role,
   activeItem,
   onItemClick,
+  onLogout,
 }: {
   open: boolean;
   onClose: () => void;
   role: DashboardRole;
   activeItem: DashboardNavId;
   onItemClick: (id: DashboardNavId) => void;
+  onLogout: () => void;
 }) {
   const navigate = useNavigate();
   const config = roleConfig[role];
 
   const handleNav = (id: DashboardNavId) => {
+    if (id === "logout") {
+      onClose();
+      onLogout();
+      return;
+    }
+
     onItemClick(id);
     const path = getDashboardPath(role, id);
     if (path) navigate(path);
@@ -695,8 +721,27 @@ export function DashboardLayout({
   activeNav = "dashboard",
   children,
 }: DashboardLayoutProps) {
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<DashboardNavId>(activeNav as DashboardNavId);
+  const [logoutMessage, setLogoutMessage] = useState<LogoutMessage>(null);
+
+  const handleLogout = async () => {
+    setLogoutMessage(null);
+
+    try {
+      await logoutUser();
+      setLogoutMessage({ type: "success", text: "Logout successful." });
+      await wait(1000);
+      navigate(role === "admin" ? "/admin/login" : "/", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setLogoutMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Logout failed. Please try again.",
+      });
+    }
+  };
 
   return (
     <motion.div
@@ -706,7 +751,12 @@ export function DashboardLayout({
       className="flex h-screen overflow-hidden bg-slate-50"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
-      <Sidebar role={role} activeItem={activeItem} onItemClick={setActiveItem} />
+      <Sidebar
+        role={role}
+        activeItem={activeItem}
+        onItemClick={setActiveItem}
+        onLogout={handleLogout}
+      />
 
       <MobileDrawer
         open={mobileOpen}
@@ -714,10 +764,26 @@ export function DashboardLayout({
         role={role}
         activeItem={activeItem}
         onItemClick={setActiveItem}
+        onLogout={handleLogout}
       />
 
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        <TopNavbar title={title} role={role} onMobileMenuOpen={() => setMobileOpen(true)} />
+        <TopNavbar
+          title={title}
+          role={role}
+          onMobileMenuOpen={() => setMobileOpen(true)}
+          onLogout={handleLogout}
+        />
+        {logoutMessage && (
+          <p
+            className={`px-6 pt-4 lg:px-8 font-medium ${
+              logoutMessage.type === "success" ? "text-green-600" : "text-red-500"
+            }`}
+            style={{ fontSize: "0.78rem" }}
+          >
+            {logoutMessage.text}
+          </p>
+        )}
         <main className="flex-1 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
