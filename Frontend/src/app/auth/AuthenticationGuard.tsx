@@ -43,7 +43,9 @@ export default function AuthenticationGuard({
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    // Admin pages use the admin login page. Students and clients use the common login page.
+    const loginPath = allowedRole === "admin" ? "/admin/login" : "/login";
+    return <Navigate to={loginPath} replace state={{ from: location }} />;
   }
 
   if (user.role !== allowedRole) {
