@@ -46,20 +46,6 @@ export default function PublicAuthGuard({ page, children }: PublicAuthGuardProps
     checkUser();
   }, []);
 
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setDialogOpen(false);
-      }
-    };
-
-    if (dialogOpen) {
-      window.addEventListener("keydown", closeOnEscape);
-    }
-
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [dialogOpen]);
-
   const continueToDashboard = () => {
     if (!user) return;
     navigate(dashboardPaths[user.role], { replace: true });
@@ -110,7 +96,6 @@ export default function PublicAuthGuard({ page, children }: PublicAuthGuardProps
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={() => setDialogOpen(false)}
           >
             <motion.div
               role="dialog"
@@ -120,7 +105,6 @@ export default function PublicAuthGuard({ page, children }: PublicAuthGuardProps
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ duration: 0.2 }}
-              onClick={(event) => event.stopPropagation()}
             >
               <h2 className="text-slate-900 font-bold" style={{ fontSize: "1.2rem" }}>
                 Already signed in
