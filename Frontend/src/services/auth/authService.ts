@@ -77,10 +77,22 @@ export const loginUser = async (userData: {
 
 
 export const logoutUser = async () => {
-  const response = await fetch(`${API_URL}/logout`, {
-    method: "POST",
-    credentials: "include",
-  });
+  const requestLogout = () =>
+    fetch(`${API_URL}/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+  let response = await requestLogout();
+
+  if (response.status === 401) {
+    // Logout is protected, so refresh once if the access token expired.
+    const refreshSuccess = await refreshToken();
+
+    if (refreshSuccess) {
+      response = await requestLogout();
+    }
+  }
 
   const data = await response.json();
 

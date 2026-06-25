@@ -84,7 +84,12 @@ const registerUser = asyncHandler(async (req, res) => {
     role,
   });
 
-  // 10. Fetch safe user (no sensitive data)
+  // 10. Generate tokens so the new user is logged in after registering
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  // 11. Fetch safe user (no sensitive data)
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
@@ -93,9 +98,17 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "User creation failed");
   }
 
-  // 11. Response
+  const options = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  };
+
+  // 12. Response
   return res
     .status(201)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(new ApiResponse(201, createdUser, "User registered successfully"));
 });
 
