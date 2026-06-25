@@ -1,12 +1,28 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api/v1/users";
 
+type Role = "student" | "client" | "admin";
+
+export type AuthUser = {
+  _id: string;
+  fullName: string;
+  email: string;
+  role: Role;
+};
+
+type ApiResponse<T> = {
+  statusCode: number;
+  data: T;
+  message: string;
+  success: boolean;
+};
+
 export const registerUser = async (userData: {
   fullName: string;
   email: string;
   password: string;
   confirmPassword: string;
   role: string;
-}) => {
+}): Promise<ApiResponse<AuthUser>> => {
   const response = await fetch(`${API_URL}/register`, {
     method: "POST",
     headers: {
@@ -25,7 +41,16 @@ export const registerUser = async (userData: {
   return data;
 };
 
-export const loginUser = async (userData: { email: string; password: string }) => {
+export const loginUser = async (userData: {
+  email: string;
+  password: string;
+}): Promise<
+  ApiResponse<{
+    user: AuthUser;
+    accessToken: string;
+    refreshToken: string;
+  }>
+> => {
   const response = await fetch(`${API_URL}/login`, {
     method: "POST",
     headers: {

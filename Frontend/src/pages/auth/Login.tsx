@@ -1,18 +1,26 @@
 ﻿import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 import { loginUser } from "@/services/auth/authService";
 
+const dashboardPaths = {
+  student: "/dashboard/student",
+  client: "/dashboard/client",
+  admin: "/admin/dashboard",
+} as const;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default function Login() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [successMessage, setSuccessMessage] = useState("");
 
   const set = (field: string) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -24,45 +32,47 @@ export default function Login() {
     return e;
   };
 
- const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const validationErrors = validate();
+    const validationErrors = validate();
 
-  if (Object.keys(validationErrors).length) {
-    setErrors(validationErrors);
-    return;
-  }
-
-  setErrors({});
-  setLoading(true);
-
-  try {
-    const response = await loginUser({
-      email: form.email,
-      password: form.password,
-    });
-
-    const user = response.data;
-
-    if (user.role === "student") {
-      navigate("/dashboard/student", { replace: true });
-    } else if (user.role === "client") {
-      navigate("/dashboard/client", { replace: true });
-    } else if (user.role === "admin") {
-      navigate("/admin/dashboard", { replace: true });
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      setSuccessMessage("");
+      return;
     }
-  } catch (error) {
-    setErrors({
-      form:
-        error instanceof Error
-          ? error.message
-          : "Login failed. Please try again.",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+
+    setErrors({});
+    setSuccessMessage("");
+    setLoading(true);
+
+    try {
+      const response = await loginUser({
+        email: form.email,
+        password: form.password,
+      });
+
+      const user = response.data.user;
+      const dashboardPath = dashboardPaths[user.role];
+
+      if (!dashboardPath) {
+        setErrors({ form: "Unable to find dashboard for this account." });
+        return;
+      }
+
+      setSuccessMessage("Login successful.");
+      await wait(1000);
+      navigate(dashboardPath, { replace: true });
+    } catch (error) {
+      setSuccessMessage("");
+      setErrors({
+        form: error instanceof Error ? error.message : "Login failed. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -181,6 +191,18 @@ export default function Login() {
                 Forgot password?
               </Link>
             </div>
+
+            {errors.form && (
+              <p className="text-red-500 font-medium" style={{ fontSize: "0.78rem" }}>
+                {errors.form}
+              </p>
+            )}
+
+            {successMessage && (
+              <p className="text-green-600 font-medium" style={{ fontSize: "0.78rem" }}>
+                {successMessage}
+              </p>
+            )}
 
             {/* Submit */}
             <motion.button

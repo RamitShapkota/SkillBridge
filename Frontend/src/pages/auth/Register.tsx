@@ -1,9 +1,16 @@
 ﻿import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 import { registerUser } from "@/services/auth/authService";
+
+const dashboardPaths = {
+  student: "/dashboard/student",
+  client: "/dashboard/client",
+} as const;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Input field component
 
@@ -58,13 +65,13 @@ function InputField({
 
 export default function Register() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [role, setRole] = useState<"student" | "client">("student");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [successMessage, setSuccessMessage] = useState("");
 
   const set = (field: string) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -79,45 +86,49 @@ export default function Register() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const validationErrors = validate();
+    const validationErrors = validate();
 
-  if (Object.keys(validationErrors).length) {
-    setErrors(validationErrors);
-    return;
-  }
-
-  setErrors({});
-  setLoading(true);
-
-  try {
-    const response = await registerUser({
-      fullName: form.name,
-      email: form.email,
-      password: form.password,
-      confirmPassword: form.confirm,
-      role,
-    });
-
-    const user = response.data;
-
-    if (user.role === "student") {
-      navigate("/dashboard/student", { replace: true });
-    } else if (user.role === "client") {
-      navigate("/dashboard/client", { replace: true });
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      setSuccessMessage("");
+      return;
     }
-  } catch (error) {
-    setErrors({
-      form:
-        error instanceof Error
-          ? error.message
-          : "Registration failed. Please try again.",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+
+    setErrors({});
+    setSuccessMessage("");
+    setLoading(true);
+
+    try {
+      const response = await registerUser({
+        fullName: form.name,
+        email: form.email,
+        password: form.password,
+        confirmPassword: form.confirm,
+        role,
+      });
+
+      const user = response.data;
+      if (user.role !== "student" && user.role !== "client") {
+        setErrors({ form: "Unable to find dashboard for this account." });
+        return;
+      }
+
+      const dashboardPath = dashboardPaths[user.role];
+
+      setSuccessMessage("Account created successfully.");
+      await wait(1000);
+      navigate(dashboardPath, { replace: true });
+    } catch (error) {
+      setSuccessMessage("");
+      setErrors({
+        form: error instanceof Error ? error.message : "Registration failed. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -247,6 +258,12 @@ export default function Register() {
             {errors.form && (
               <p className="text-red-500 font-medium" style={{ fontSize: "0.78rem" }}>
                 {errors.form}
+              </p>
+            )}
+
+            {successMessage && (
+              <p className="text-green-600 font-medium" style={{ fontSize: "0.78rem" }}>
+                {successMessage}
               </p>
             )}
 
