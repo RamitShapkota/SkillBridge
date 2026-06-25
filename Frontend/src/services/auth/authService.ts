@@ -44,6 +44,7 @@ export const registerUser = async (userData: {
 export const loginUser = async (userData: {
   email: string;
   password: string;
+  loginType?: "common" | "admin";
 }): Promise<
   ApiResponse<{
     user: AuthUser;

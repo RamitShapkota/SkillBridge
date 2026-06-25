@@ -2,24 +2,50 @@
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Zap, Lock, Mail, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { loginUser } from "@/services/auth/authService.js";
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@skillbridge.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setError("");
-    if (email !== "admin@skillbridge.com" || password !== "admin123") {
-      setError("Invalid admin credentials.");
-      return;
-    }
+    setSuccessMessage("");
     setLoading(true);
-    setTimeout(() => navigate("/admin/dashboard"), 1200);
+
+    try {
+      const response = await loginUser({
+        email,
+        password,
+        loginType: "admin",
+      });
+
+      const user = response.data.user;
+
+      if (user.role !== "admin") {
+        setError("Only administrators can log in here.");
+        return;
+      }
+
+      setSuccessMessage("Login successful.");
+      await wait(1000);
+      navigate("/admin/dashboard", {
+        replace: true,
+      });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,6 +133,12 @@ export default function AdminLoginPage() {
               </p>
             )}
 
+            {successMessage && (
+              <p className="text-green-600 font-medium" style={{ fontSize: "0.78rem" }}>
+                {successMessage}
+              </p>
+            )}
+
             <motion.button
               type="submit"
               disabled={loading}
@@ -132,7 +164,7 @@ export default function AdminLoginPage() {
           </form>
 
           <p className="text-center text-slate-400" style={{ fontSize: "0.72rem" }}>
-            Demo credentials pre-filled above
+            Use the admin credentials configured in the backend
           </p>
         </div>
 

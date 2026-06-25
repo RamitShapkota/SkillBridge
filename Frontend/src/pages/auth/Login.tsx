@@ -3,13 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Zap, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
-import { loginUser } from "@/services/auth/authService";
-
-const dashboardPaths = {
-  student: "/dashboard/student",
-  client: "/dashboard/client",
-  admin: "/admin/dashboard",
-} as const;
+import { loginUser } from "@/services/auth/authService.js";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -51,19 +45,32 @@ export default function Login() {
       const response = await loginUser({
         email: form.email,
         password: form.password,
+        loginType: "common",
       });
 
       const user = response.data.user;
-      const dashboardPath = dashboardPaths[user.role];
 
-      if (!dashboardPath) {
-        setErrors({ form: "Unable to find dashboard for this account." });
+      // This login page is only for students and clients
+      if (user.role === "admin") {
+        setErrors({
+          form: "Please use the Admin Login page.",
+        });
         return;
       }
 
       setSuccessMessage("Login successful.");
+
       await wait(1000);
-      navigate(dashboardPath, { replace: true });
+
+      if (user.role === "student") {
+        navigate("/dashboard/student", { replace: true });
+      } else if (user.role === "client") {
+        navigate("/dashboard/client", { replace: true });
+      } else {
+        setErrors({
+          form: "Invalid account type.",
+        });
+      }
     } catch (error) {
       setSuccessMessage("");
       setErrors({

@@ -103,7 +103,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   // Get data from request body
-  const { email, password } = req.body || {};
+  const { email, password, loginType = "common" } = req.body || {};
 
   // 1. VALIDATION
   if (!email || !password) {
@@ -111,6 +111,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const loginSource = loginType === "admin" ? "admin" : "common";
 
   // 2. FIND USER
   const user = await User.findOne({
@@ -122,19 +123,28 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  // 3. PASSWORD CHECK
+  // 3. LOGIN PAGE ROLE CHECK
+  if (loginSource === "common" && user.role === "admin") {
+    throw new ApiError(403, "Please use the Admin Login page.");
+  }
+
+  if (loginSource === "admin" && user.role !== "admin") {
+    throw new ApiError(403, "Only administrators can log in here.");
+  }
+
+  // 4. PASSWORD CHECK
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid email or password");
   }
 
-  // 4. GENERATE TOKENS
+  // 5. GENERATE TOKENS
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
     user._id
   );
 
-  // 5. GET SAFE USER DATA
+  // 6. GET SAFE USER DATA
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
@@ -143,14 +153,14 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Something went wrong while logging in");
   }
 
-  // 6. COOKIE OPTIONS
+  // 7. COOKIE OPTIONS
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
   };
 
-  // 7. SEND RESPONSE
+  // 8. SEND RESPONSE
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
