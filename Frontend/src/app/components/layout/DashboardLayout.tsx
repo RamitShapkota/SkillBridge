@@ -18,6 +18,8 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { logoutUser } from "@/services/auth/authService";
+
 
 export type DashboardRole = "student" | "client" | "admin";
 type DashboardNavId =

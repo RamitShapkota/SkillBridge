@@ -41,6 +41,9 @@ export const registerUser = async (userData: {
   return data;
 };
 
+
+
+
 export const loginUser = async (userData: {
   email: string;
   password: string;
@@ -59,6 +62,22 @@ export const loginUser = async (userData: {
     },
     credentials: "include",
     body: JSON.stringify(userData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
+
+
+export const logoutUser = async () => {
+  const response = await fetch(`${API_URL}/logout`, {
+    method: "POST",
+    credentials: "include",
   });
 
   const data = await response.json();
