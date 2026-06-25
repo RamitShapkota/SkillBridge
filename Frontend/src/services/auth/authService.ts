@@ -1,3 +1,5 @@
+import { refreshToken } from "./refreshToken";
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api/v1/users";
 
 type Role = "student" | "client" | "admin";
@@ -92,14 +94,42 @@ export const logoutUser = async () => {
 
 
 export const getCurrentUser = async (): Promise<ApiResponse<AuthUser>> => {
-  const response = await fetch(`${API_URL}/current-user`, {
-    method: "GET",
-    credentials: "include",
-  });
+  const requestCurrentUser = () =>
+    fetch(`${API_URL}/current-user`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+  const isProtectedPage =
+    window.location.pathname.startsWith("/dashboard") ||
+    window.location.pathname.startsWith("/admin/dashboard") ||
+    window.location.pathname.startsWith("/admin/users") ||
+    window.location.pathname.startsWith("/admin/jobs") ||
+    window.location.pathname.startsWith("/admin/settings") ||
+    window.location.pathname.startsWith("/admin/students");
+
+  const redirectPath = window.location.pathname.startsWith("/admin") ? "/admin/login" : "/login";
+
+  let response = await requestCurrentUser();
+
+  if (response.status === 401 && isProtectedPage) {
+    // Try refresh once, then retry the original request once.
+    const refreshSuccess = await refreshToken();
+
+    if (refreshSuccess) {
+      response = await requestCurrentUser();
+    } else {
+      window.location.href = redirectPath;
+    }
+  }
 
   const data = await response.json();
 
   if (!response.ok) {
+    if (isProtectedPage) {
+      window.location.href = redirectPath;
+    }
+
     throw new Error(data.message);
   }
 
