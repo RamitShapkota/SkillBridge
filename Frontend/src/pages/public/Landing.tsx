@@ -25,12 +25,7 @@ export default function Landing() {
     checkUser();
   }, []);
 
-  const getStartedPath =
-    currentUser?.role === "student"
-      ? "/dashboard/student"
-      : currentUser?.role === "client"
-        ? "/dashboard/client"
-        : "/register";
+  const getStartedPath = currentUser?.role === "admin" ? "/admin/dashboard" : "/register";
 
   const loginPath = currentUser?.role === "admin" ? "/admin/login" : "/login";
 

@@ -94,8 +94,9 @@ export default function PublicAuthGuard({ page, children }: PublicAuthGuardProps
   const message =
     page === "login"
       ? `You are already signed in as a ${roleName}.\nWould you like to continue or switch to another account?`
-      : "You are already signed in.\nTo create another account, you must first sign out.";
-  const secondaryButtonText = page === "login" ? "Switch Account" : "Logout & Register New Account";
+      : `You are already signed in as a ${roleName}.\nTo create another account, you must first sign out.`;
+  const secondaryButtonText =
+    page === "login" ? "Switch Account" : "Logout & Create New Account";
 
   return (
     <>
