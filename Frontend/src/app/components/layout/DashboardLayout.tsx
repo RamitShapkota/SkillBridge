@@ -34,26 +34,15 @@ export type DashboardCurrentUser = AuthUser & {
 };
 
 const DashboardCurrentUserContext = createContext<DashboardCurrentUser | null>(null);
-let dashboardCurrentUserPromise: Promise<DashboardCurrentUser | null> | null = null;
-let dashboardCurrentUserCache: DashboardCurrentUser | null = null;
 
 export function useDashboardCurrentUser() {
   return useContext(DashboardCurrentUserContext);
 }
 
 function loadDashboardCurrentUser() {
-  if (dashboardCurrentUserCache) return Promise.resolve(dashboardCurrentUserCache);
-
-  if (!dashboardCurrentUserPromise) {
-    dashboardCurrentUserPromise = getCurrentUser()
-      .then((response) => {
-        dashboardCurrentUserCache = response.data;
-        return response.data;
-      })
-      .catch(() => null);
-  }
-
-  return dashboardCurrentUserPromise;
+  return getCurrentUser()
+    .then((response) => response.data)
+    .catch(() => null);
 }
 
 function formatRole(role: DashboardRole) {
@@ -798,6 +787,7 @@ export function DashboardLayout({
 
     try {
       await logoutUser();
+      setCurrentUser(null);
       setNotification({ type: "success", text: "Logout successful." });
       await wait(2000);
       navigate(role === "admin" ? "/admin/login" : "/", { replace: true });
