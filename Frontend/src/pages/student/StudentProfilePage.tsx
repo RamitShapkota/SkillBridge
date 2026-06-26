@@ -89,15 +89,16 @@ function ShareModal({ onClose }: { onClose: () => void }) {
     </motion.div>
   );
 }
-import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
+import {
+  DashboardLayout,
+  useDashboardCurrentUser,
+} from "../../app/components/layout/DashboardLayout";
 import { StudentProfileView } from "../../app/components/shared/StudentProfileView";
 import { getProfile, subscribeProfile } from "../../app/data/profileStore";
 import { PROJECTS } from "../../app/data/projects";
 
 // Default static data shown when the store is empty (new user hasn't saved settings yet)
 const DEFAULTS = {
-  name: "Ramit Sonar",
-  initials: "RS",
   headline: "Computer Engineering Student",
   bio: "Computer Engineering student passionate about web development, React, UI design, and building modern digital products.",
   verified: true,
@@ -116,10 +117,10 @@ const DEFAULTS = {
   github: "github.com/ramitsharma",
   linkedin: "linkedin.com/in/ramitsharma",
   portfolio: "ramitsharma.com",
-  email: "ramit.sharma@ku.edu.np",
 };
 
-export default function StudentProfilePage() {
+function StudentProfileContent() {
+  const currentUser = useDashboardCurrentUser();
   const [shareOpen, setShareOpen] = useState(false);
   const [profile, setProfileState] = useState(getProfile());
 
@@ -128,12 +129,12 @@ export default function StudentProfilePage() {
 
   // Merge store data with defaults: if the store field is non-empty, prefer it
   const p = profile;
-  const name = p.name || DEFAULTS.name;
+  const name = p.name || currentUser?.fullName || "";
   const bio = p.bio || DEFAULTS.bio;
   const github = p.github || DEFAULTS.github;
   const linkedin = p.linkedin || DEFAULTS.linkedin;
   const portfolio = p.portfolio || DEFAULTS.portfolio;
-  const email = p.email || DEFAULTS.email;
+  const email = p.email || currentUser?.email || "";
   const initials = name
     .trim()
     .split(" ")
@@ -152,7 +153,7 @@ export default function StudentProfilePage() {
   const completedProjectsCount = PROJECTS.filter((pr) => pr.status === "completed").length;
 
   return (
-    <DashboardLayout role="student" title="My Profile" activeNav="profile">
+    <>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -197,6 +198,14 @@ export default function StudentProfilePage() {
       <AnimatePresence>
         {shareOpen && <ShareModal onClose={() => setShareOpen(false)} />}
       </AnimatePresence>
+    </>
+  );
+}
+
+export default function StudentProfilePage() {
+  return (
+    <DashboardLayout role="student" title="My Profile" activeNav="profile">
+      <StudentProfileContent />
     </DashboardLayout>
   );
 }
