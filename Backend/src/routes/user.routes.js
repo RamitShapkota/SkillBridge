@@ -45,7 +45,7 @@ router.route("/refresh-token").post(refreshAccessToken);
 
 router.route("/current-user").get(verifyJWT, currentUserRoles, getCurrentUser);
 
-router.route("/change-password").post(verifyJWT, authenticatedRoles, changeCurrentPassword);
+router.route("/change-password").post(verifyJWT, currentUserRoles, changeCurrentPassword);
 
 router.route("/update-account").patch(verifyJWT, authenticatedRoles, updateAccountDetails);
 

@@ -161,6 +161,28 @@ export const resetPassword = async (
   return data;
 };
 
+export const changePassword = async (passwordData: {
+  oldPassword: string;
+  newPassword: string;
+}): Promise<ApiResponse<{}>> => {
+  const response = await fetch(`${API_URL}/change-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(passwordData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
+
 
 
 

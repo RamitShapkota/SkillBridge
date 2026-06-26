@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { Settings, Lock, Check, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { changePassword } from "../../services/auth/authService";
 
 type Section = "general" | "security";
 
@@ -166,22 +167,60 @@ function SecuritySection() {
   const [showCon, setShowCon] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [formMessage, setFormMessage] = useState("");
+  const [formMessageType, setFormMessageType] = useState<"success" | "error">("success");
 
   const pwMatch = newPw && confirm && newPw === confirm;
-  const canSave = !!current && newPw.length >= 8 && !!pwMatch;
+  const canSave = !!current && !!newPw && !!pwMatch;
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSave) return;
-    setSaving(true);
-    setTimeout(() => {
+    setFormMessage("");
+
+    if (!current.trim()) {
+      setFormMessageType("error");
+      setFormMessage("Current Password is required.");
+      return;
+    }
+
+    if (!newPw.trim()) {
+      setFormMessageType("error");
+      setFormMessage("New Password is required.");
+      return;
+    }
+
+    if (!confirm.trim()) {
+      setFormMessageType("error");
+      setFormMessage("Confirm Password is required.");
+      return;
+    }
+
+    if (newPw !== confirm) {
+      setFormMessageType("error");
+      setFormMessage("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await changePassword({
+        oldPassword: current,
+        newPassword: newPw,
+      });
+
       setSaving(false);
       setSaved(true);
       setCurrent("");
       setNewPw("");
       setConfirm("");
+      setFormMessageType("success");
+      setFormMessage("Password changed successfully.");
       setTimeout(() => setSaved(false), 3000);
-    }, 900);
+    } catch (error) {
+      setSaving(false);
+      setFormMessageType("error");
+      setFormMessage(error instanceof Error ? error.message : "Password update failed.");
+    }
   };
 
   const passwordPlaceholder = (label: string) =>
@@ -269,6 +308,14 @@ function SecuritySection() {
         {newPw && confirm && !pwMatch && (
           <p className="text-red-500" style={{ fontSize: "0.72rem" }}>
             Passwords do not match.
+          </p>
+        )}
+        {formMessage && (
+          <p
+            className={formMessageType === "success" ? "text-emerald-600" : "text-red-500"}
+            style={{ fontSize: "0.75rem" }}
+          >
+            {formMessage}
           </p>
         )}
         <div className="pt-1 border-t border-black/[0.05]">
