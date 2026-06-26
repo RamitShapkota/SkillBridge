@@ -68,6 +68,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
+  if (this.password.startsWith("$2a$") || this.password.startsWith("$2b$")) return;
 
   this.password = await bcrypt.hash(this.password, 10);
 });
@@ -116,4 +117,59 @@ userSchema.methods.generatePasswordResetToken = function () {
   return resetToken;
 };
 
+const pendingRegistrationSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 3,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
+    password: {
+      type: String,
+      required: true,
+      minlength: 8,
+    },
+
+    role: {
+      type: String,
+      enum: ["student", "client"],
+      required: true,
+    },
+
+    verificationOtp: {
+      type: String,
+      required: true,
+    },
+
+    verificationOtpExpires: {
+      type: Date,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+pendingRegistrationSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  if (this.password.startsWith("$2a$") || this.password.startsWith("$2b$")) return;
+
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
 export const User = mongoose.model("User", userSchema);
+export const PendingRegistration = mongoose.model(
+  "PendingRegistration",
+  pendingRegistrationSchema
+);

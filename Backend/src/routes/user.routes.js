@@ -8,6 +8,8 @@ import {
     changeCurrentPassword,
     updateAccountDetails,
     updateUserAvatar,
+    sendVerificationOtp,
+    verifyEmail,
     forgotPassword,
     resetPassword,
 } from "../controllers/user.controller.js";
@@ -23,6 +25,10 @@ const logoutRoles = authorizeRoles("student", "client", "admin");
 router.route("/register").post(registerUser);
 
 router.route("/login").post(loginUser);
+
+router.route("/send-verification-otp").post(sendVerificationOtp);
+
+router.route("/verify-email").post(verifyEmail);
 
 router.route("/forgot-password").post(forgotPassword);
 

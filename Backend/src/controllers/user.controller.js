@@ -1,4 +1,4 @@
-import { User } from "../models/user.model.js";
+import { PendingRegistration, User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -32,86 +32,34 @@ const isStudentEmail = (email) => {
   return domain?.toLowerCase().endsWith("edu.np");
 };
 
+const getEmailTransporter = () => {
+  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const emailPassword = process.env.EMAIL_PASSWORD || process.env.SMTP_PASSWORD;
+
+  if (process.env.SMTP_HOST) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: emailUser,
+        pass: emailPassword,
+      },
+    });
+  }
+
+  return nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE || "gmail",
+    auth: {
+      user: emailUser,
+      pass: emailPassword,
+    },
+  });
+};
+
 //for register
 const registerUser = asyncHandler(async (req, res) => {
-  let { fullName, email, password, confirmPassword, role } = req.body;
-
-  // 1. Presence check
-  if (
-    [fullName, email, password, confirmPassword, role].some((f) => !f?.trim())
-  ) {
-    throw new ApiError(400, "All fields are required");
-  }
-
-  // 2. Normalize values early
-  role = role.toLowerCase();
-  const normalizedEmail = email.trim().toLowerCase();
-  const normalizedFullName = fullName.trim();
-
-  // 3. Role validation
-  if (!["student", "client"].includes(role)) {
-    throw new ApiError(400, "Invalid role");
-  }
-
-  // 4. Email format validation
-  if (!EMAIL_REGEX.test(normalizedEmail)) {
-    throw new ApiError(400, "Invalid email format");
-  }
-
-  // 5. Student email restriction
-  if (role === "student" && !isStudentEmail(normalizedEmail)) {
-    throw new ApiError(400, "Students must use .edu.np email");
-  }
-
-  // 6. Password checks
-  if (password !== confirmPassword) {
-    throw new ApiError(400, "Passwords do not match");
-  }
-
-  if (password.length < 8) {
-    throw new ApiError(400, "Password must be at least 8 characters");
-  }
-
-  // 7. Duplicate user check
-  const existedUser = await User.findOne({ email: normalizedEmail });
-  if (existedUser) {
-    throw new ApiError(409, "Email already exists");
-  }
-
-  // 9. Create user
-  const user = await User.create({
-    fullName: normalizedFullName,
-    email: normalizedEmail,
-    password,
-    role,
-  });
-
-  // 10. Generate tokens so the new user is logged in after registering
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
-    user._id
-  );
-
-  // 11. Fetch safe user (no sensitive data)
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
-
-  if (!createdUser) {
-    throw new ApiError(500, "User creation failed");
-  }
-
-  const options = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  };
-
-  // 12. Response
-  return res
-    .status(201)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(201, createdUser, "User registered successfully"));
+  throw new ApiError(400, "Please verify your email before registration.");
 });
 
 //for log in
@@ -351,6 +299,169 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password Change Successfully"));
 });
 
+
+
+
+//this two sendVerificationOtp and verifyEmail for verify user email
+const sendVerificationOtp = asyncHandler(async (req, res) => {
+  let { fullName, email, password, confirmPassword, role } = req.body;
+
+  if (
+    [fullName, email, password, confirmPassword, role].some((f) => !f?.trim())
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  role = role.toLowerCase();
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedFullName = fullName.trim();
+
+  if (!["student", "client"].includes(role)) {
+    throw new ApiError(400, "Invalid role");
+  }
+
+  if (!EMAIL_REGEX.test(normalizedEmail)) {
+    throw new ApiError(400, "Invalid email format");
+  }
+
+  if (role === "student" && !isStudentEmail(normalizedEmail)) {
+    throw new ApiError(400, "Students must use .edu.np email");
+  }
+
+  if (password !== confirmPassword) {
+    throw new ApiError(400, "Passwords do not match");
+  }
+
+  if (password.length < 8) {
+    throw new ApiError(400, "Password must be at least 8 characters");
+  }
+
+  const existedUser = await User.findOne({ email: normalizedEmail });
+  if (existedUser) {
+    throw new ApiError(409, "Email already registered.");
+  }
+
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+  let pendingUser = await PendingRegistration.findOne({
+    email: normalizedEmail,
+  });
+
+  if (!pendingUser) {
+    pendingUser = new PendingRegistration({
+      fullName: normalizedFullName,
+      email: normalizedEmail,
+      password,
+      role,
+      verificationOtp: hashedOtp,
+      verificationOtpExpires: Date.now() + 5 * 60 * 1000,
+    });
+  } else {
+    pendingUser.fullName = normalizedFullName;
+    pendingUser.password = password;
+    pendingUser.role = role;
+    pendingUser.verificationOtp = hashedOtp;
+    pendingUser.verificationOtpExpires = Date.now() + 5 * 60 * 1000;
+  }
+
+  await pendingUser.save();
+
+  const message = `Hello,
+
+Your SkillBridge verification code is
+
+${otp}
+
+This OTP expires in 5 minutes.
+
+If you did not request this, ignore this email.`;
+
+  try {
+    const transporter = getEmailTransporter();
+    await transporter.verify();
+
+    await transporter.sendMail({
+      from:
+        process.env.EMAIL_FROM ||
+        process.env.SMTP_FROM ||
+        process.env.EMAIL_USER ||
+        process.env.SMTP_USER,
+      to: normalizedEmail,
+      subject: "Verify your SkillBridge email",
+      text: message,
+    });
+  } catch (error) {
+    console.error("Nodemailer email verification error:", error);
+    await PendingRegistration.deleteOne({ email: normalizedEmail });
+
+    throw new ApiError(500, "OTP email could not be sent.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "OTP sent successfully."));
+});
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body || {};
+
+  if (!email || !otp) {
+    throw new ApiError(400, "Email and OTP are required");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const pendingUser = await PendingRegistration.findOne({
+    email: normalizedEmail,
+  });
+
+  if (!pendingUser) {
+    throw new ApiError(400, "Invalid OTP.");
+  }
+
+  if (pendingUser.verificationOtpExpires < Date.now()) {
+    await PendingRegistration.deleteOne({ email: normalizedEmail });
+    throw new ApiError(400, "OTP expired.");
+  }
+
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+  if (hashedOtp !== pendingUser.verificationOtp) {
+    throw new ApiError(400, "Invalid OTP.");
+  }
+
+  const existedUser = await User.findOne({ email: normalizedEmail });
+  if (existedUser) {
+    await PendingRegistration.deleteOne({ email: normalizedEmail });
+    throw new ApiError(409, "Email already registered.");
+  }
+
+  const user = await User.create({
+    fullName: pendingUser.fullName,
+    email: pendingUser.email,
+    password: pendingUser.password,
+    role: pendingUser.role,
+  });
+
+  await PendingRegistration.deleteOne({ email: normalizedEmail });
+
+  const createdUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        createdUser,
+        "Registration completed successfully."
+      )
+    );
+});
+
+
+//this two forgotPassword and resetPassword is for forgot passwod logic
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body || {};
 
@@ -371,31 +482,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
   const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
-  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const emailPassword = process.env.EMAIL_PASSWORD || process.env.SMTP_PASSWORD;
-
-  let transporter;
-
-  if (process.env.SMTP_HOST) {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: emailUser,
-        pass: emailPassword,
-      },
-    });
-  } else {
-    transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || "gmail",
-      auth: {
-        user: emailUser,
-        pass: emailPassword,
-      },
-    });
-  }
-
   const message = `Hello,
 
 Click the link below to reset your password.
@@ -405,10 +491,15 @@ ${resetUrl}
 This link expires in 15 minutes.`;
 
   try {
+    const transporter = getEmailTransporter();
     await transporter.verify();
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.SMTP_FROM || emailUser,
+      from:
+        process.env.EMAIL_FROM ||
+        process.env.SMTP_FROM ||
+        process.env.EMAIL_USER ||
+        process.env.SMTP_USER,
       to: user.email,
       subject: "Reset your SkillBridge password",
       text: message,
@@ -421,7 +512,6 @@ This link expires in 15 minutes.`;
     await user.save({ validateBeforeSave: false });
 
     throw new ApiError(500, "Password reset email could not be sent.");
-    
   }
 
   return res
@@ -479,6 +569,8 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   changeCurrentPassword,
+  sendVerificationOtp,
+  verifyEmail,
   forgotPassword,
   resetPassword,
 };

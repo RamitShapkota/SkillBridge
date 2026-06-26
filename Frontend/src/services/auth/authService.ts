@@ -43,6 +43,52 @@ export const registerUser = async (userData: {
   return data;
 };
 
+
+
+//this two sendVerificationOtp and  for verify user email 
+export const sendVerificationOtp = async (userData: {
+  fullName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: string;
+}): Promise<ApiResponse<{}>> => {
+  const response = await fetch(`${API_URL}/send-verification-otp`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
+
+export const verifyEmail = async (email: string, otp: string): Promise<ApiResponse<AuthUser>> => {
+  const response = await fetch(`${API_URL}/verify-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, otp }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
+
+
 export const loginUser = async (userData: {
   email: string;
   password: string;
@@ -72,6 +118,9 @@ export const loginUser = async (userData: {
   return data;
 };
 
+
+
+//this two forgotPassword and resetPassword for forgot passwod logic
 export const forgotPassword = async (email: string): Promise<ApiResponse<{}>> => {
   const response = await fetch(`${API_URL}/forgot-password`, {
     method: "POST",
@@ -112,6 +161,9 @@ export const resetPassword = async (
   return data;
 };
 
+
+
+
 export const logoutUser = async () => {
   const requestLogout = () =>
     fetch(`${API_URL}/logout`, {
@@ -138,6 +190,8 @@ export const logoutUser = async () => {
 
   return data;
 };
+
+
 
 export const getCurrentUser = async (): Promise<ApiResponse<AuthUser>> => {
   const requestCurrentUser = () =>

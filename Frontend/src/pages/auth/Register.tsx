@@ -3,15 +3,8 @@ import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
-import { registerUser } from "@/services/auth/authService";
+import { sendVerificationOtp } from "@/services/auth/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
-
-const dashboardPaths = {
-  student: "/dashboard/student",
-  client: "/dashboard/client",
-} as const;
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Input field component
 
@@ -102,7 +95,7 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const response = await registerUser({
+      await sendVerificationOtp({
         fullName: form.name,
         email: form.email,
         password: form.password,
@@ -110,17 +103,10 @@ export default function Register() {
         role,
       });
 
-      const user = response.data;
-      if (user.role !== "student" && user.role !== "client") {
-        setNotification({ type: "error", text: "Unable to find dashboard for this account." });
-        return;
-      }
-
-      const dashboardPath = dashboardPaths[user.role];
-
-      setNotification({ type: "success", text: "Account created successfully." });
-      await wait(2000);
-      navigate(dashboardPath, { replace: true });
+      setNotification({ type: "success", text: "OTP sent successfully." });
+      navigate("/verify-email", {
+        state: { email: form.email.trim().toLowerCase() },
+      });
     } catch (error) {
       setNotification({
         type: "error",
