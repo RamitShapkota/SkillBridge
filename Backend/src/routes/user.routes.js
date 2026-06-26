@@ -22,14 +22,16 @@ const authenticatedRoles = authorizeRoles("student", "client");
 const currentUserRoles = authorizeRoles("student", "client", "admin");
 const logoutRoles = authorizeRoles("student", "client", "admin");
 
-router.route("/register").post(registerUser);
 
 router.route("/login").post(loginUser);
 
+//register route
 router.route("/send-verification-otp").post(sendVerificationOtp);
 
 router.route("/verify-email").post(verifyEmail);
 
+
+//forgot password route
 router.route("/forgot-password").post(forgotPassword);
 
 router.route("/reset-password/:token").post(resetPassword);

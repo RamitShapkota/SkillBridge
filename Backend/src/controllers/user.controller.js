@@ -57,10 +57,7 @@ const getEmailTransporter = () => {
   });
 };
 
-//for register
-const registerUser = asyncHandler(async (req, res) => {
-  throw new ApiError(400, "Please verify your email before registration.");
-});
+
 
 //for log in
 
