@@ -151,7 +151,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       },
     },
     {
-      new: true,
+      returnDocument: "after",
     }
   );
 
@@ -244,7 +244,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         email,
       },
     },
-    { new: true }
+    { returnDocument: "after" }
   ).select("-password");
 
   return res
@@ -272,7 +272,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         avatar: avatar.url,
       },
     },
-    { new: true }
+    { returnDocument: "after" }
   ).select("-Password");
 
   return res
