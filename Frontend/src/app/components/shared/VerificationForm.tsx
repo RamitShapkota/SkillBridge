@@ -14,6 +14,7 @@ import {
   Clock,
   RefreshCw,
 } from "lucide-react";
+import { useDashboardCurrentUser } from "@/app/components/layout/DashboardLayout";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -283,6 +284,7 @@ interface VerificationFormProps {
 }
 
 export function VerificationForm({ onSubmitted }: VerificationFormProps) {
+  const currentUser = useDashboardCurrentUser();
   const [university, setUniversity] = useState("");
   const [studentId, setStudentId] = useState("");
   const [idCard, setIdCard] = useState<UploadedFile | null>(null);
@@ -345,7 +347,7 @@ export function VerificationForm({ onSubmitted }: VerificationFormProps) {
               </div>
               <input
                 type="email"
-                value="student@university.edu.np"
+                value={currentUser?.email ?? ""}
                 readOnly
                 className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-slate-500 outline-none cursor-default"
                 style={{ fontSize: "0.875rem" }}

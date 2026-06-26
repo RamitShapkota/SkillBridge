@@ -1,6 +1,9 @@
 ﻿import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
+import {
+  DashboardLayout,
+  useDashboardCurrentUser,
+} from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { getProfile, setProfile } from "../../app/data/profileStore";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
@@ -282,6 +285,8 @@ function SkillsComboBox({
 // Profile Information
 
 function ProfileSection() {
+  const currentUser = useDashboardCurrentUser();
+  const [displayName, setDisplayName] = useState("");
   const [about, setAbout] = useState("");
   const [education, setEducation] = useState("");
   const [university, setUniversity] = useState("");
@@ -295,12 +300,13 @@ function ProfileSection() {
   // Hydrate from store on mount
   useEffect(() => {
     const p = getProfile();
+    setDisplayName((prev) => prev || p.name || currentUser?.fullName || "");
     setAbout(p.bio);
     setEducation(p.education);
     setUniversity(p.university);
     setSkills(p.skills);
     setAvatarUrl(p.avatarUrl);
-  }, []);
+  }, [currentUser]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -312,6 +318,7 @@ function ProfileSection() {
 
   const validate = () => {
     const e: Record<string, string> = {};
+    if (!displayName.trim()) e.displayName = "Name is required.";
     if (!about.trim()) e.about = "About section is required.";
     if (!education.trim()) e.education = "Education is required.";
     if (!university.trim()) e.university = "University is required.";
@@ -326,14 +333,22 @@ function ProfileSection() {
     if (Object.keys(errs).length > 0) return;
     setSaving(true);
     setTimeout(() => {
-      setProfile({ bio: about, education, university, skills, avatarUrl });
+      setProfile({ name: displayName, bio: about, education, university, skills, avatarUrl });
       setSaving(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     }, 900);
   };
 
-  const initials = "RS";
+  const initials = displayName.trim()
+    ? displayName
+        .trim()
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "ST";
 
   return (
     <form onSubmit={handleSave} className="flex flex-col gap-5">
@@ -390,6 +405,18 @@ function ProfileSection() {
 
       {/* Fields */}
       <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel text="Name" required />
+          <input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Enter your full name"
+            className={inputCls}
+            style={{ fontSize: "0.875rem" }}
+          />
+          <ErrorMsg msg={errors.displayName ?? ""} />
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <FieldLabel text="About" required />
           <textarea

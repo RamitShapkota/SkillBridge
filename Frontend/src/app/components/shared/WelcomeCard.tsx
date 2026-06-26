@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
+import { useDashboardCurrentUser } from "@/app/components/layout/DashboardLayout";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -21,6 +22,9 @@ interface WelcomeCardProps {
 }
 
 export function WelcomeCard({ name, subtitle, actions = [] }: WelcomeCardProps) {
+  const currentUser = useDashboardCurrentUser();
+  const displayName = currentUser?.fullName || name;
+
   return (
     <div
       className="relative rounded-3xl overflow-hidden p-8 lg:p-10"
@@ -61,7 +65,7 @@ export function WelcomeCard({ name, subtitle, actions = [] }: WelcomeCardProps) 
           className="text-white tracking-tight mb-2"
           style={{ fontSize: "clamp(1.4rem, 2.5vw, 2rem)", fontWeight: 800, lineHeight: 1.2 }}
         >
-          Welcome back, {name}
+          Welcome back, {displayName} 
         </h2>
 
         {/* Subtitle */}

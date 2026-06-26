@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { useNavigate } from "react-router";
+import { createContext, useContext } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Briefcase,
@@ -18,12 +19,59 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { logoutUser } from "@/services/auth/authService";
+import { getCurrentUser, logoutUser, type AuthUser } from "@/services/auth/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type DashboardRole = "student" | "client" | "admin";
+export type DashboardCurrentUser = AuthUser & {
+  avatar?: string;
+  username?: string;
+  phone?: string;
+  isVerified?: boolean;
+  profileCompleted?: boolean;
+};
+
+const DashboardCurrentUserContext = createContext<DashboardCurrentUser | null>(null);
+let dashboardCurrentUserPromise: Promise<DashboardCurrentUser | null> | null = null;
+let dashboardCurrentUserCache: DashboardCurrentUser | null = null;
+
+export function useDashboardCurrentUser() {
+  return useContext(DashboardCurrentUserContext);
+}
+
+function loadDashboardCurrentUser() {
+  if (dashboardCurrentUserCache) return Promise.resolve(dashboardCurrentUserCache);
+
+  if (!dashboardCurrentUserPromise) {
+    dashboardCurrentUserPromise = getCurrentUser()
+      .then((response) => {
+        dashboardCurrentUserCache = response.data;
+        return response.data;
+      })
+      .catch(() => null);
+  }
+
+  return dashboardCurrentUserPromise;
+}
+
+function formatRole(role: DashboardRole) {
+  if (role === "student") return "Student";
+  if (role === "client") return "Client";
+  return "Admin";
+}
+
+function getInitials(name: string) {
+  return name
+    .trim()
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 type DashboardNavId =
   | "dashboard"
   | "profile"
@@ -204,11 +252,13 @@ function getDashboardPath(role: DashboardRole, id: DashboardNavId) {
 
 function Sidebar({
   role,
+  currentUser,
   activeItem,
   onItemClick,
   onLogout,
 }: {
   role: DashboardRole;
+  currentUser: DashboardCurrentUser | null;
   activeItem: DashboardNavId;
   onItemClick: (id: DashboardNavId) => void;
   onLogout: () => void;
@@ -218,6 +268,9 @@ function Sidebar({
   const collapseTimer = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
   const config = roleConfig[role];
+  const displayName = currentUser?.fullName || config.user.name;
+  const displayRole = currentUser?.role ? formatRole(currentUser.role) : config.user.label;
+  const displayInitials = getInitials(displayName) || config.user.initials;
 
   const handleMouseEnter = () => {
     clearTimeout(collapseTimer.current);
@@ -426,7 +479,7 @@ function Sidebar({
             className={`w-7 h-7 rounded-lg ${config.user.avatarClassName} flex items-center justify-center text-white shrink-0`}
             style={{ fontSize: "0.6rem", fontWeight: 800 }}
           >
-            {config.user.initials}
+            {displayInitials}
           </div>
           <AnimatePresence>
             {expanded && (
@@ -445,10 +498,10 @@ function Sidebar({
                   className="text-slate-900 font-semibold truncate"
                   style={{ fontSize: "0.74rem" }}
                 >
-                  {config.user.name}
+                  {displayName}
                 </p>
                 <p className="text-slate-400 truncate" style={{ fontSize: "0.6rem" }}>
-                  {config.user.label}
+                  {displayRole}
                 </p>
               </motion.div>
             )}
@@ -462,11 +515,13 @@ function Sidebar({
 function TopNavbar({
   title,
   role,
+  currentUser,
   onMobileMenuOpen,
   onLogout,
 }: {
   title: string;
   role: DashboardRole;
+  currentUser: DashboardCurrentUser | null;
   onMobileMenuOpen: () => void;
   onLogout: () => void;
 }) {
@@ -474,6 +529,9 @@ function TopNavbar({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const config = roleConfig[role];
+  const displayName = currentUser?.fullName || config.user.name;
+  const displayRole = currentUser?.role ? formatRole(currentUser.role) : config.user.label;
+  const displayInitials = getInitials(displayName) || config.user.initials;
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -509,14 +567,14 @@ function TopNavbar({
               className={`w-8 h-8 rounded-xl ${config.user.avatarClassName} flex items-center justify-center text-white`}
               style={{ fontSize: "0.65rem", fontWeight: 800 }}
             >
-              {config.user.initials}
+              {displayInitials}
             </div>
             <div className="hidden sm:block text-left">
               <p
                 className="text-slate-900 font-semibold leading-tight"
                 style={{ fontSize: "0.8rem" }}
               >
-                {config.user.name}
+                {displayName}
               </p>
               <p
                 className="leading-tight"
@@ -526,7 +584,7 @@ function TopNavbar({
                   fontWeight: 600,
                 }}
               >
-                {config.user.label}
+                {displayRole}
               </p>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
@@ -720,7 +778,20 @@ export function DashboardLayout({
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<DashboardNavId>(activeNav as DashboardNavId);
+  const [currentUser, setCurrentUser] = useState<DashboardCurrentUser | null>(null);
   const [notification, setNotification] = useState<NotificationMessage>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    loadDashboardCurrentUser().then((user) => {
+      if (mounted) setCurrentUser(user);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleLogout = async () => {
     setNotification(null);
@@ -740,48 +811,52 @@ export function DashboardLayout({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className="flex h-screen overflow-hidden bg-slate-50"
-      style={{ fontFamily: "'Inter', sans-serif" }}
-    >
-      <Sidebar
-        role={role}
-        activeItem={activeItem}
-        onItemClick={setActiveItem}
-        onLogout={handleLogout}
-      />
-
-      <MobileDrawer
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        role={role}
-        activeItem={activeItem}
-        onItemClick={setActiveItem}
-        onLogout={handleLogout}
-      />
-
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        <TopNavbar
-          title={title}
+    <DashboardCurrentUserContext.Provider value={currentUser}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="flex h-screen overflow-hidden bg-slate-50"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        <Sidebar
           role={role}
-          onMobileMenuOpen={() => setMobileOpen(true)}
+          currentUser={currentUser}
+          activeItem={activeItem}
+          onItemClick={setActiveItem}
           onLogout={handleLogout}
         />
-        <main className="flex-1 overflow-y-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-            className="p-6 lg:p-8 max-w-6xl"
-          >
-            {children}
-          </motion.div>
-        </main>
-      </div>
-      <Notification message={notification} onClose={() => setNotification(null)} />
-    </motion.div>
+
+        <MobileDrawer
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          role={role}
+          activeItem={activeItem}
+          onItemClick={setActiveItem}
+          onLogout={handleLogout}
+        />
+
+        <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+          <TopNavbar
+            title={title}
+            role={role}
+            currentUser={currentUser}
+            onMobileMenuOpen={() => setMobileOpen(true)}
+            onLogout={handleLogout}
+          />
+          <main className="flex-1 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+              className="p-6 lg:p-8 max-w-6xl"
+            >
+              {children}
+            </motion.div>
+          </main>
+        </div>
+        <Notification message={notification} onClose={() => setNotification(null)} />
+      </motion.div>
+    </DashboardCurrentUserContext.Provider>
   );
 }
