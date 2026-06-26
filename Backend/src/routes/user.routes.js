@@ -7,7 +7,9 @@ import {
     getCurrentUser,
     changeCurrentPassword,
     updateAccountDetails,
-    updateUserAvatar
+    updateUserAvatar,
+    forgotPassword,
+    resetPassword,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
@@ -21,6 +23,10 @@ const logoutRoles = authorizeRoles("student", "client", "admin");
 router.route("/register").post(registerUser);
 
 router.route("/login").post(loginUser);
+
+router.route("/forgot-password").post(forgotPassword);
+
+router.route("/reset-password/:token").post(resetPassword);
 
 //secure route
 router.route("/logout").post(verifyJWT, logoutRoles, logoutUser);
@@ -36,7 +42,5 @@ router.route("/update-account").patch(verifyJWT, authenticatedRoles, updateAccou
 router
   .route("/avatar")
   .patch(verifyJWT, authenticatedRoles, upload.single("avatar"), updateUserAvatar);
-
-
 
 export default router;

@@ -43,9 +43,6 @@ export const registerUser = async (userData: {
   return data;
 };
 
-
-
-
 export const loginUser = async (userData: {
   email: string;
   password: string;
@@ -75,6 +72,45 @@ export const loginUser = async (userData: {
   return data;
 };
 
+export const forgotPassword = async (email: string): Promise<ApiResponse<{}>> => {
+  const response = await fetch(`${API_URL}/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
+
+export const resetPassword = async (
+  token: string,
+  password: string,
+  confirmPassword: string
+): Promise<ApiResponse<{}>> => {
+  const response = await fetch(`${API_URL}/reset-password/${token}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password, confirmPassword }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
 
 export const logoutUser = async () => {
   const requestLogout = () =>
@@ -102,8 +138,6 @@ export const logoutUser = async () => {
 
   return data;
 };
-
-
 
 export const getCurrentUser = async (): Promise<ApiResponse<AuthUser>> => {
   const requestCurrentUser = () =>

@@ -2,6 +2,8 @@
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { forgotPassword } from "@/services/auth/authService";
+import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -9,21 +11,31 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!email.includes("@")) {
       setError("Enter a valid email address.");
       return;
     }
+
     setError("");
+    setNotification(null);
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      await forgotPassword(email);
+      setSent(true);
+      setNotification({ type: "success", text: "Password reset link sent to your email." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Password reset failed.";
+      setError(message);
+      setNotification({ type: "error", text: message });
+    } finally {
       setLoading(false);
-      // Demo: only "known" emails succeed
-      if (email.toLowerCase().includes("@")) setSent(true);
-      else setError("No account found with this email address.");
-    }, 1200);
+    }
   };
 
   return (
@@ -155,6 +167,7 @@ export default function ForgotPasswordPage() {
           </AnimatePresence>
         </div>
       </div>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </motion.div>
   );
 }

@@ -4,6 +4,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -349,6 +351,125 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password Change Successfully"));
 });
 
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body || {};
+
+  if (!email) {
+    throw new ApiError(400, "Email is required");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    throw new ApiError(404, "No account found with this email address.");
+  }
+
+  const resetToken = user.generatePasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const emailPassword = process.env.EMAIL_PASSWORD || process.env.SMTP_PASSWORD;
+
+  let transporter;
+
+  if (process.env.SMTP_HOST) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: emailUser,
+        pass: emailPassword,
+      },
+    });
+  } else {
+    transporter = nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || "gmail",
+      auth: {
+        user: emailUser,
+        pass: emailPassword,
+      },
+    });
+  }
+
+  const message = `Hello,
+
+Click the link below to reset your password.
+
+${resetUrl}
+
+This link expires in 15 minutes.`;
+
+  try {
+    await transporter.verify();
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.SMTP_FROM || emailUser,
+      to: user.email,
+      subject: "Reset your SkillBridge password",
+      text: message,
+    });
+  } catch (error) {
+    console.error("Nodemailer password reset error:", error);
+
+    user.passwordResetToken = "";
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    throw new ApiError(500, "Password reset email could not be sent.");
+    
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset link sent to your email."));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password, confirmPassword } = req.body || {};
+
+  if (!token) {
+    throw new ApiError(400, "Reset token is required");
+  }
+
+  if (!password || !confirmPassword) {
+    throw new ApiError(400, "Password and confirm password are required");
+  }
+
+  if (password !== confirmPassword) {
+    throw new ApiError(400, "Passwords do not match");
+  }
+
+  if (password.length < 8) {
+    throw new ApiError(400, "Password must be at least 8 characters");
+  }
+
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Reset token is invalid or expired.");
+  }
+
+  user.password = password;
+  user.passwordResetToken = "";
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset successfully."));
+});
+
 export {
   registerUser,
   loginUser,
@@ -358,4 +479,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   changeCurrentPassword,
+  forgotPassword,
+  resetPassword,
 };

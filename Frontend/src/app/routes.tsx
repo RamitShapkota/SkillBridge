@@ -12,6 +12,7 @@ import PublicBrowseJobsPage from "../pages/public/PublicBrowseJobsPage";
 import AdminJobsPage from "../pages/admin/AdminJobsPage";
 import Login from "../pages/auth/Login";
 import ForgotPasswordPage from "../pages/auth/ForgotPassword";
+import ResetPasswordPage from "../pages/auth/ResetPassword";
 import StudentDashboard from "../pages/student/StudentDashboardPage";
 import ClientDashboard from "../pages/client/ClientDashboardPage";
 import StudentProfilePage from "../pages/student/StudentProfilePage";
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { path: "p/:username", Component: PublicProfilePage },
       { path: "browse", Component: PublicBrowseJobsPage },
       { path: "forgot-password", Component: ForgotPasswordPage },
+      { path: "reset-password/:token", Component: ResetPasswordPage },
       {
         path: "register",
         element: (
