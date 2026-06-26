@@ -4,6 +4,7 @@ import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { Settings, Lock, Check, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { changePassword } from "../../services/auth/authService";
+import { Notification, type NotificationMessage } from "../../app/components/shared/ui";
 
 type Section = "general" | "security";
 
@@ -167,37 +168,35 @@ function SecuritySection() {
   const [showCon, setShowCon] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [formMessage, setFormMessage] = useState("");
-  const [formMessageType, setFormMessageType] = useState<"success" | "error">("success");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
 
   const pwMatch = newPw && confirm && newPw === confirm;
   const canSave = !!current && !!newPw && !!pwMatch;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormMessage("");
+    setNotification(null);
 
     if (!current.trim()) {
-      setFormMessageType("error");
-      setFormMessage("Current Password is required.");
+      setNotification({ type: "error", text: "Please fill in all required fields." });
       return;
     }
 
     if (!newPw.trim()) {
-      setFormMessageType("error");
-      setFormMessage("New Password is required.");
+      setNotification({ type: "error", text: "Please fill in all required fields." });
       return;
     }
 
     if (!confirm.trim()) {
-      setFormMessageType("error");
-      setFormMessage("Confirm Password is required.");
+      setNotification({ type: "error", text: "Please fill in all required fields." });
       return;
     }
 
     if (newPw !== confirm) {
-      setFormMessageType("error");
-      setFormMessage("Passwords do not match.");
+      setNotification({
+        type: "error",
+        text: "New password and confirm password do not match.",
+      });
       return;
     }
 
@@ -213,13 +212,17 @@ function SecuritySection() {
       setCurrent("");
       setNewPw("");
       setConfirm("");
-      setFormMessageType("success");
-      setFormMessage("Password changed successfully.");
+      setNotification({ type: "success", text: "Password changed successfully." });
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       setSaving(false);
-      setFormMessageType("error");
-      setFormMessage(error instanceof Error ? error.message : "Password update failed.");
+      const message = error instanceof Error ? error.message : "";
+      const text =
+        message === "Invalid old password"
+          ? "Current password is incorrect."
+          : "Failed to change password. Please try again.";
+
+      setNotification({ type: "error", text });
     }
   };
 
@@ -310,18 +313,11 @@ function SecuritySection() {
             Passwords do not match.
           </p>
         )}
-        {formMessage && (
-          <p
-            className={formMessageType === "success" ? "text-emerald-600" : "text-red-500"}
-            style={{ fontSize: "0.75rem" }}
-          >
-            {formMessage}
-          </p>
-        )}
         <div className="pt-1 border-t border-black/[0.05]">
           <SaveButton saving={saving} saved={saved} label="Update Security Settings" />
         </div>
       </form>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </div>
   );
 }

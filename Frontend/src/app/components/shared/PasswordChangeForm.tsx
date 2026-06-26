@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { motion } from "motion/react";
 import { AlertCircle, Check, Eye, EyeOff } from "lucide-react";
 import { changePassword } from "@/services/auth/authService";
+import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const inputCls =
   "w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10";
@@ -73,8 +74,7 @@ export function PasswordChangeForm() {
   const [touched, setTouched] = useState<TouchedFields>(initialTouched);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [formMessage, setFormMessage] = useState("");
-  const [formMessageType, setFormMessageType] = useState<"success" | "error">("success");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
 
   const errors = {
     current: getFieldError("current", current, newPw),
@@ -91,11 +91,18 @@ export function PasswordChangeForm() {
   const handleSavePw = async (e: FormEvent) => {
     e.preventDefault();
     setTouched({ current: true, new: true, confirm: true });
-    setFormMessage("");
+    setNotification(null);
 
-    if (!canSavePw) {
-      setFormMessageType("error");
-      setFormMessage("Please fix the password errors.");
+    if (!current.trim() || !newPw.trim() || !confirm.trim()) {
+      setNotification({ type: "error", text: "Please fill in all required fields." });
+      return;
+    }
+
+    if (newPw !== confirm) {
+      setNotification({
+        type: "error",
+        text: "New password and confirm password do not match.",
+      });
       return;
     }
 
@@ -112,13 +119,17 @@ export function PasswordChangeForm() {
       setNewPw("");
       setConfirm("");
       setTouched(initialTouched);
-      setFormMessageType("success");
-      setFormMessage("Password changed successfully.");
+      setNotification({ type: "success", text: "Password changed successfully." });
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       setSaving(false);
-      setFormMessageType("error");
-      setFormMessage(error instanceof Error ? error.message : "Password update failed.");
+      const message = error instanceof Error ? error.message : "";
+      const text =
+        message === "Invalid old password"
+          ? "Current password is incorrect."
+          : "Failed to change password. Please try again.";
+
+      setNotification({ type: "error", text });
     }
   };
 
@@ -160,57 +171,52 @@ export function PasswordChangeForm() {
   };
 
   return (
-    <form onSubmit={handleSavePw} className="flex flex-col gap-4">
-      <p className="text-slate-900 font-semibold" style={{ fontSize: "0.875rem" }}>
-        Change Password
-      </p>
-      {pwField("current", current, setCurrent, showCur, () => setShowCur((v) => !v))}
-      {pwField("new", newPw, setNewPw, showNew, () => setShowNew((v) => !v))}
-      {pwField("confirm", confirm, setConfirm, showCon, () => setShowCon((v) => !v))}
-      {touched.confirm && errors.confirm === "Passwords do not match." && (
-        <div className="flex items-center gap-2 text-red-500">
-          <AlertCircle className="w-3.5 h-3.5" />
-          <span style={{ fontSize: "0.75rem" }}>Passwords do not match.</span>
-        </div>
-      )}
-      {formMessage && (
-        <p
-          className={formMessageType === "success" ? "text-emerald-600" : "text-red-500"}
-          style={{ fontSize: "0.75rem" }}
-        >
-          {formMessage}
+    <>
+      <form onSubmit={handleSavePw} className="flex flex-col gap-4">
+        <p className="text-slate-900 font-semibold" style={{ fontSize: "0.875rem" }}>
+          Change Password
         </p>
-      )}
-      <div className="pt-1 border-t border-black/[0.05]">
-        <motion.button
-          type="submit"
-          disabled={saving}
-          whileHover={!saving ? { scale: 1.02 } : {}}
-          whileTap={!saving ? { scale: 0.97 } : {}}
-          className="flex items-center gap-2 font-semibold px-6 py-2.5 rounded-xl transition-all shadow-sm disabled:opacity-100"
-          style={{
-            background: saved ? "#059669" : canSavePw ? "#2563EB" : "#E2E8F0",
-            border: canSavePw ? "1px solid transparent" : "1px solid #CBD5E1",
-            color: canSavePw ? "white" : "#64748B",
-            fontSize: "0.875rem",
-            cursor: !saving ? "pointer" : "not-allowed",
-          }}
-        >
-          {saving ? (
-            <motion.span
-              className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-            />
-          ) : saved ? (
-            <>
-              <Check className="w-4 h-4" /> Saved!
-            </>
-          ) : (
-            "Change Password"
-          )}
-        </motion.button>
-      </div>
-    </form>
+        {pwField("current", current, setCurrent, showCur, () => setShowCur((v) => !v))}
+        {pwField("new", newPw, setNewPw, showNew, () => setShowNew((v) => !v))}
+        {pwField("confirm", confirm, setConfirm, showCon, () => setShowCon((v) => !v))}
+        {touched.confirm && errors.confirm === "Passwords do not match." && (
+          <div className="flex items-center gap-2 text-red-500">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span style={{ fontSize: "0.75rem" }}>Passwords do not match.</span>
+          </div>
+        )}
+        <div className="pt-1 border-t border-black/[0.05]">
+          <motion.button
+            type="submit"
+            disabled={saving}
+            whileHover={!saving ? { scale: 1.02 } : {}}
+            whileTap={!saving ? { scale: 0.97 } : {}}
+            className="flex items-center gap-2 font-semibold px-6 py-2.5 rounded-xl transition-all shadow-sm disabled:opacity-100"
+            style={{
+              background: saved ? "#059669" : canSavePw ? "#2563EB" : "#E2E8F0",
+              border: canSavePw ? "1px solid transparent" : "1px solid #CBD5E1",
+              color: canSavePw ? "white" : "#64748B",
+              fontSize: "0.875rem",
+              cursor: !saving ? "pointer" : "not-allowed",
+            }}
+          >
+            {saving ? (
+              <motion.span
+                className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              />
+            ) : saved ? (
+              <>
+                <Check className="w-4 h-4" /> Saved!
+              </>
+            ) : (
+              "Change Password"
+            )}
+          </motion.button>
+        </div>
+      </form>
+      <Notification message={notification} onClose={() => setNotification(null)} />
+    </>
   );
 }
