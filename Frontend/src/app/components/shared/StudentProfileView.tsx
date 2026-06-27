@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { getProfile, subscribeProfile } from "../../data/profileStore";
 import { REVIEWS } from "../../data/reviews";
 import { PROJECTS } from "../../data/projects";
-import { Github, Linkedin, Globe, Star, CheckCircle, Mail, Briefcase } from "lucide-react";
+import { Github, Linkedin, Globe, Star, CheckCircle, Briefcase } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,7 +20,6 @@ export interface ProfileViewProps {
   github?: string;
   linkedin?: string;
   portfolio?: string;
-  email?: string;
   /** Pass an explicit avatar URL, or omit to auto-read from the profile store */
   avatarUrl?: string;
 }
@@ -44,7 +43,7 @@ function SocialIcon({
       onMouseLeave={() => setHovered(false)}
     >
       <a
-        href={href.startsWith("mailto") ? href : `https://${href}`}
+        href={`https://${href}`}
         target="_blank"
         rel="noopener noreferrer"
         className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
@@ -93,7 +92,6 @@ function ProfileOverview({ profile }: { profile: ProfileViewProps }) {
     profile.github && { icon: Github, label: "GitHub", href: profile.github },
     profile.linkedin && { icon: Linkedin, label: "LinkedIn", href: profile.linkedin },
     profile.portfolio && { icon: Globe, label: "Portfolio", href: profile.portfolio },
-    profile.email && { icon: Mail, label: "Email", href: `mailto:${profile.email}` },
   ].filter(Boolean) as { icon: ElementType; label: string; href: string }[];
 
   return (

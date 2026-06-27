@@ -51,13 +51,6 @@ const studentProfileSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-
-    professionalEmail: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      default: "",
-    },
   },
   {
     timestamps: true,

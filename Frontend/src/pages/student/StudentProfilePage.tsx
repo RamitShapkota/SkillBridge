@@ -134,7 +134,6 @@ function StudentProfileContent() {
   const github = p.github || DEFAULTS.github;
   const linkedin = p.linkedin || DEFAULTS.linkedin;
   const portfolio = p.portfolio || DEFAULTS.portfolio;
-  const email = p.email || currentUser?.email || "";
   const initials = name
     .trim()
     .split(" ")
@@ -190,7 +189,6 @@ function StudentProfileContent() {
             github: github || undefined,
             linkedin: linkedin || undefined,
             portfolio: portfolio || undefined,
-            email: email || undefined,
           }}
         />
       </motion.div>

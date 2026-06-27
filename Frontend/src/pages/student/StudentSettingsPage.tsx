@@ -23,7 +23,6 @@ import {
   Github,
   Linkedin,
   Globe,
-  Mail,
   Trash2,
   AlertCircle,
 } from "lucide-react";
@@ -484,7 +483,6 @@ function SocialSection() {
   const [github, setGithub] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [portfolio, setPortfolio] = useState("");
-  const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -493,14 +491,13 @@ function SocialSection() {
     setGithub(p.github);
     setLinkedin(p.linkedin);
     setPortfolio(p.portfolio);
-    setEmail(p.email);
   }, []);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setTimeout(() => {
-      setProfile({ github, linkedin, portfolio, email });
+      setProfile({ github, linkedin, portfolio });
       setSaving(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -534,15 +531,6 @@ function SocialSection() {
       set: setPortfolio,
       type: "url",
       placeholder: "https://yourportfolio.com",
-    },
-    {
-      icon: Mail,
-      key: "email",
-      label: "Professional Contact Email",
-      value: email,
-      set: setEmail,
-      type: "email",
-      placeholder: "you@email.com",
     },
   ];
 

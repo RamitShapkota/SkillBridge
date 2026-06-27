@@ -11,7 +11,6 @@ export interface ProfileData {
   github: string;
   linkedin: string;
   portfolio: string;
-  email: string;
 }
 
 const DEFAULT: ProfileData = {
@@ -24,7 +23,6 @@ const DEFAULT: ProfileData = {
   github: "",
   linkedin: "",
   portfolio: "",
-  email: "",
 };
 
 let _data: ProfileData = { ...DEFAULT };
