@@ -343,6 +343,7 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
                 </motion.div>
               ) : (
                 <motion.form
+                  id="apply-form"
                   key="form"
                   onSubmit={handleSubmit}
                   initial={{ opacity: 0 }}

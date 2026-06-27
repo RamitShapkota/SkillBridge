@@ -7,7 +7,7 @@ import connectDB from "./db/index.js";
 import { app } from "./app.js";
 import createAdmin from "./utils/createAdmin.js";
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 3000;
 
 connectDB()
   .then(async () => {

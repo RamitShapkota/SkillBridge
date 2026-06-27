@@ -1,5 +1,8 @@
 import multer from "multer";
 import path from "path"; // 1. You must import path here
+import { ApiError } from "../utils/ApiError.js";
+
+const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -16,4 +19,19 @@ const storage = multer.diskStorage({
   },
 });
 
-export const upload = multer({ storage });
+const fileFilter = function (req, file, cb) {
+  if (!allowedImageTypes.includes(file.mimetype)) {
+    cb(new ApiError(400, "Only JPG, JPEG, PNG and WEBP image files are allowed"));
+    return;
+  }
+
+  cb(null, true);
+};
+
+export const upload = multer({
+  storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024,
+  },
+  fileFilter,
+});

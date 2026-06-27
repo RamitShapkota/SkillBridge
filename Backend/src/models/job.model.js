@@ -58,7 +58,7 @@ const jobSchema = new mongoose.Schema(
 
     complexity: {
       type: String,
-      enum: ["beginner", "intermediate"],
+      enum: ["small", "medium"],
       required: true,
     },
 

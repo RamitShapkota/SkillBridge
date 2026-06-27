@@ -236,12 +236,28 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedFullName = fullName.trim();
+
+  if (!EMAIL_REGEX.test(normalizedEmail)) {
+    throw new ApiError(400, "Invalid email format");
+  }
+
+  const existedUser = await User.findOne({
+    email: normalizedEmail,
+    _id: { $ne: req.user?._id },
+  });
+
+  if (existedUser) {
+    throw new ApiError(409, "Email already registered.");
+  }
+
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
-        fullName,
-        email,
+        fullName: normalizedFullName,
+        email: normalizedEmail,
       },
     },
     { returnDocument: "after" }
@@ -273,7 +289,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
       },
     },
     { returnDocument: "after" }
-  ).select("-Password");
+  ).select("-password");
 
   return res
     .status(200)
