@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { ArrowRight, KeyRound, Mail, Zap } from "lucide-react";
 
-import { verifyEmail } from "@/services/auth/authService";
+import { verifyEmail } from "@/services/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

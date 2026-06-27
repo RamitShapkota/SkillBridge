@@ -25,7 +25,7 @@ import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { ApplyModal } from "../../app/components/ApplyModal";
 import { ClientInformationCard } from "../../app/components/shared/ClientInformationCard";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
-import { JOB_CATEGORIES, JOB_DURATION_OPTIONS, JOB_SKILL_COLORS } from "../../services/api";
+import { JOB_CATEGORIES, JOB_DURATION_OPTIONS, JOB_SKILL_COLORS } from "../../constants/job.constants";
 import type { BrowseJob, JobCategoryId } from "../../types";
 
 // Dummy data

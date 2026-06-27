@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { motion } from "motion/react";
 import { ArrowRight, Lock, Zap } from "lucide-react";
 
-import { resetPassword } from "@/services/auth/authService";
+import { resetPassword } from "@/services/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

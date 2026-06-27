@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { Settings, Lock, Check, Eye, EyeOff, AlertTriangle } from "lucide-react";
-import { changePassword } from "../../services/auth/authService";
+import { changePassword } from "../../services/authService";
 import { Notification, type NotificationMessage } from "../../app/components/shared/ui";
 
 type Section = "general" | "security";

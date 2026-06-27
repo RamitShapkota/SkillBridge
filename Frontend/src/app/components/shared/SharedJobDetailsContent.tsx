@@ -18,7 +18,7 @@ import {
   Download,
 } from "lucide-react";
 import { ClientInformationCard } from "./ClientInformationCard";
-import { JOB_CATEGORY_LABELS, JOB_DURATION_LABELS, JOB_SKILL_COLORS } from "../../../services/api";
+import { JOB_CATEGORY_LABELS, JOB_DURATION_LABELS, JOB_SKILL_COLORS } from "../../../constants/job.constants";
 
 // ── Category config ───────────────────────────────────────────────────────────
 

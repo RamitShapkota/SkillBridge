@@ -7,7 +7,7 @@ import { HowItWorks } from "../../app/components/HowItWorks";
 import { WhyChoose } from "../../app/components/WhyChoose";
 import { CTA } from "../../app/components/CTA";
 import { Footer } from "../../app/components/Footer";
-import { getCurrentUser, type AuthUser } from "../../services/auth/authService";
+import { getCurrentUser, type AuthUser } from "../../services/authService";
 
 export default function Landing() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);

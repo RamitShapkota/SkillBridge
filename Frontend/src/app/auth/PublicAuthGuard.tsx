@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
-import { getCurrentUser, logoutUser, type AuthUser } from "@/services/auth/authService";
+import { getCurrentUser, logoutUser, type AuthUser } from "@/services/authService";
 
 type PublicAuthGuardProps = {
   page: "login" | "register";

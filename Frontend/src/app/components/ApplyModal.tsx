@@ -12,7 +12,7 @@ import {
   ArrowRight,
   AlertCircle,
 } from "lucide-react";
-import { JOB_CATEGORY_LABELS, JOB_DURATION_LABELS, JOB_SKILL_COLORS } from "../../services/api";
+import { JOB_CATEGORY_LABELS, JOB_DURATION_LABELS, JOB_SKILL_COLORS } from "../../constants/job.constants";
 import type { BrowseJob } from "../../types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────

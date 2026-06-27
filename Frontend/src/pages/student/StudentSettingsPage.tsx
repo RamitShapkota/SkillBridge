@@ -11,7 +11,7 @@ import { VerificationForm } from "../../app/components/shared/VerificationForm";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
 import { ConfirmDialog, Notification, type NotificationMessage } from "../../app/components/shared/ui";
 import { getStudentProfile, updateStudentProfile } from "../../services/studentProfileService";
-import { updateAccountDetails } from "../../services/auth/authService";
+import { updateAccountDetails } from "../../services/authService";
 import {
   User,
   Link2,

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, User, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
-import { sendVerificationOtp } from "@/services/auth/authService";
+import { sendVerificationOtp } from "@/services/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 // Input field component

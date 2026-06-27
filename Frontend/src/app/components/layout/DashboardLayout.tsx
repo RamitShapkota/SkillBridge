@@ -19,7 +19,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { getCurrentUser, logoutUser, type AuthUser } from "@/services/auth/authService";
+import { getCurrentUser, logoutUser, type AuthUser } from "@/services/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

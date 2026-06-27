@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router";
 
-import { getCurrentUser, type AuthUser } from "@/services/auth/authService";
+import { getCurrentUser, type AuthUser } from "@/services/authService";
 
 type AuthenticationGuardProps = {
   allowedRole: AuthUser["role"];

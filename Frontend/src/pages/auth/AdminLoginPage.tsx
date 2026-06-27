@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useEffect } from "react";
 import { motion } from "motion/react";
 import { Zap, Lock, Mail, Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { getCurrentUser, loginUser } from "@/services/auth/authService.js";
+import { getCurrentUser, loginUser } from "@/services/authService.js";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

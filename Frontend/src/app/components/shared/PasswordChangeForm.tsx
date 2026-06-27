@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { motion } from "motion/react";
 import { AlertCircle, Check, Eye, EyeOff } from "lucide-react";
-import { changePassword } from "@/services/auth/authService";
+import { changePassword } from "@/services/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 const inputCls =

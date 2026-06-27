@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router";
 import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
-import { JOB_CATEGORIES } from "../../services/api";
+import { JOB_CATEGORIES } from "../../constants/job.constants";
 import {
   Briefcase,
   X,

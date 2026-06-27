@@ -2,7 +2,7 @@
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Zap, Mail, ArrowLeft, CheckCircle } from "lucide-react";
-import { forgotPassword } from "@/services/auth/authService";
+import { forgotPassword } from "@/services/authService";
 import { Notification, type NotificationMessage } from "@/app/components/shared/ui";
 
 export default function ForgotPasswordPage() {

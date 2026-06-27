@@ -1,4 +1,4 @@
-import type { JobCategoryId, JobDurationId } from "../../types";
+import type { JobCategoryId, JobDurationId } from "../types";
 
 export const JOB_CATEGORIES: { value: JobCategoryId; label: string }[] = [
   { value: "web-dev", label: "Web Development" },
