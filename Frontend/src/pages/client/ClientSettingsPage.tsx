@@ -1,8 +1,12 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
+import {
+  DashboardLayout,
+  useDashboardCurrentUser,
+} from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { getProfile, setProfile } from "../../app/data/profileStore";
+import { updateAccountDetails } from "../../services/authService";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
 import { ConfirmDialog, StatusBadge } from "../../app/components/shared/ui";
@@ -162,6 +166,7 @@ function FileUploadRow({
 // Profile Information
 
 function ProfileSection() {
+  const currentUser = useDashboardCurrentUser();
   const [displayName, setDisplayName] = useState("");
   const [about, setAbout] = useState("");
   const [location, setLocation] = useState("");
@@ -175,11 +180,11 @@ function ProfileSection() {
 
   useEffect(() => {
     const p = getProfile();
-    setDisplayName(p.name);
+    setDisplayName(currentUser?.fullName || p.name);
     setAbout(p.bio);
     setAvatarUrl(p.avatarUrl);
     setWebsite(p.portfolio);
-  }, []);
+  }, [currentUser]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -196,13 +201,26 @@ function ProfileSection() {
     return e;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+
+    if (!currentUser?.email) {
+      setErrors({ displayName: "Current user could not be loaded." });
+      return;
+    }
+
     setSaving(true);
-    setTimeout(() => {
+    setSaved(false);
+
+    try {
+      await updateAccountDetails({
+        fullName: displayName,
+        email: currentUser.email,
+      });
+
       setProfile({
         name: displayName,
         bio: about,
@@ -211,8 +229,13 @@ function ProfileSection() {
       });
       setSaving(false);
       setSaved(true);
+      window.dispatchEvent(new Event("skillbridge:user-updated"));
       setTimeout(() => setSaved(false), 3000);
-    }, 900);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Account could not be updated.";
+      setSaving(false);
+      setErrors({ displayName: message });
+    }
   };
 
   const initials = displayName.trim()
