@@ -9,11 +9,6 @@ const studentProfileSchema = new mongoose.Schema(
       unique: true,
     },
 
-    profilePhoto: {
-      type: String,
-      default: "",
-    },
-
     bio: {
       type: String,
       trim: true,
@@ -26,6 +21,12 @@ const studentProfileSchema = new mongoose.Schema(
       default: "",
     },
 
+    university: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     skills: [
       {
         type: String,
@@ -33,42 +34,29 @@ const studentProfileSchema = new mongoose.Schema(
       },
     ],
 
-    portfolioLink: {
+    github: {
       type: String,
       trim: true,
       default: "",
     },
 
-    githubLink: {
+    linkedin: {
       type: String,
       trim: true,
       default: "",
     },
 
-    linkedinLink: {
+    portfolio: {
       type: String,
       trim: true,
       default: "",
     },
 
-    availability: {
+    professionalEmail: {
       type: String,
-      enum: [
-        "available",
-        "busy",
-        "not_available",
-      ],
-      default: "available",
-    },
-
-    verificationStatus: {
-      type: String,
-      enum: [
-        "pending",
-        "verified",
-        "rejected",
-      ],
-      default: "pending",
+      trim: true,
+      lowercase: true,
+      default: "",
     },
   },
   {
