@@ -19,13 +19,12 @@ import {
   Eye,
   UserCheck,
   XCircle,
-  Trash2,
   Edit3,
 } from "lucide-react";
 
 // Types
 
-type JobStatus = "open" | "closed";
+type JobStatus = "open" | "closed" | "cancelled";
 type AppStatus = "pending" | "hired" | "rejected";
 
 interface VerifiedSkill {
@@ -284,6 +283,25 @@ const JOBS_INIT: Job[] = [
       },
     ],
   },
+  {
+    id: "j5",
+    title: "WordPress Contact Form Fix",
+    category: "Basic Tech Service",
+    categoryKey: "other",
+    status: "cancelled",
+    budget: "NPR 2,000",
+    budgetRaw: "2000",
+    postedAt: "3 days ago",
+    description:
+      "Fix a broken WordPress contact form and confirm messages are delivered to the client's email inbox.",
+    requirements:
+      "Check the form plugin settings, SMTP configuration, and submit a short note explaining the fix.",
+    complexity: "small",
+    duration: "1d",
+    deadline: "2026-06-29",
+    skills: ["WordPress", "Forms", "SMTP"],
+    applicants: [],
+  },
 ];
 
 // Helpers
@@ -298,6 +316,12 @@ const JOB_STATUS_CFG: Record<
     color: "#64748B",
     bg: "#F8FAFC",
     border: "#E2E8F0",
+  },
+  cancelled: {
+    label: "Cancelled",
+    color: "#DC2626",
+    bg: "#FEF2F2",
+    border: "#FECACA",
   },
 };
 
@@ -322,7 +346,7 @@ const APP_STATUS_CFG: Record<
 
 // Three-dot menu
 
-function CardMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function CardMenu({ onEdit, onCancel }: { onEdit: () => void; onCancel: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -360,9 +384,9 @@ function CardMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => vo
                 danger: false,
               },
               {
-                icon: Trash2,
-                label: "Delete Job",
-                onClick: onDelete,
+                icon: XCircle,
+                label: "Cancel Job",
+                onClick: onCancel,
                 danger: true,
               },
             ].map(({ icon: Icon, label, onClick, danger }) => (
@@ -467,7 +491,7 @@ function ConfirmModal({
   );
 }
 
-// Delete modal
+// Cancel job modal
 
 function DeleteModal({
   jobTitle,
@@ -480,9 +504,9 @@ function DeleteModal({
 }) {
   return (
     <ConfirmModal
-      title="Delete Job"
-      message={`Are you sure you want to delete <strong>"${jobTitle}"</strong>? This action cannot be undone.`}
-      confirmLabel="Delete"
+      title="Cancel Job"
+      message={`Are you sure you want to cancel <strong>"${jobTitle}"</strong>? The job will stay in your records.`}
+      confirmLabel="Cancel Job"
       confirmColor="#DC2626"
       onConfirm={onConfirm}
       onClose={onClose}
@@ -897,7 +921,7 @@ function StatusDropdown({ value, onChange }: { value: string; onChange: (v: stri
             transition={{ duration: 0.14 }}
             className="absolute right-0 top-full mt-1 w-36 bg-white border border-black/[0.07] rounded-xl shadow-lg z-20 overflow-hidden py-1"
           >
-            {["All", "Open", "Closed"].map((opt) => (
+            {["All", "Open", "Closed", "Cancelled"].map((opt) => (
               <button
                 key={opt}
                 onClick={() => {
@@ -921,13 +945,13 @@ function StatusDropdown({ value, onChange }: { value: string; onChange: (v: stri
 
 function JobCard({
   job,
-  onDelete,
+  onCancel,
   onViewDetails,
   onViewApplications,
   navigate,
 }: {
   job: Job;
-  onDelete: () => void;
+  onCancel: () => void;
   onViewDetails: () => void;
   onViewApplications: () => void;
   navigate: ReturnType<typeof useNavigate>;
@@ -967,7 +991,7 @@ function JobCard({
           <StatusBadge config={cfg} />
           <CardMenu
             onEdit={() => navigate("/dashboard/client/post-job", { state: editState })}
-            onDelete={onDelete}
+            onCancel={onCancel}
           />
         </div>
       </div>
@@ -1017,7 +1041,7 @@ export default function ManageJobsPage() {
   const [jobs, setJobs] = useState(JOBS_INIT);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Job | null>(null);
   const [detailsJob, setDetailsJob] = useState<Job | null>(null);
   const [applicationsJob, setApplicationsJob] = useState<Job | null>(null);
 
@@ -1042,6 +1066,14 @@ export default function ManageJobsPage() {
           : null
       );
     }
+  };
+
+  const cancelJob = (jobId: string) => {
+    setJobs((prev) =>
+      prev.map((job) => (job.id === jobId ? { ...job, status: "cancelled" } : job))
+    );
+    setDetailsJob((prev) => (prev?.id === jobId ? { ...prev, status: "cancelled" } : prev));
+    setApplicationsJob((prev) => (prev?.id === jobId ? { ...prev, status: "cancelled" } : prev));
   };
 
   const filtered = jobs.filter((j) => {
@@ -1136,7 +1168,7 @@ export default function ManageJobsPage() {
                   <JobCard
                     job={job}
                     navigate={navigate}
-                    onDelete={() => setDeleteTarget(job)}
+                    onCancel={() => setCancelTarget(job)}
                     onViewDetails={() => setDetailsJob(job)}
                     onViewApplications={() => setApplicationsJob(job)}
                   />
@@ -1148,14 +1180,14 @@ export default function ManageJobsPage() {
       </motion.div>
 
       <AnimatePresence>
-        {deleteTarget && (
+        {cancelTarget && (
           <DeleteModal
-            jobTitle={deleteTarget.title}
+            jobTitle={cancelTarget.title}
             onConfirm={() => {
-              setJobs((p) => p.filter((j) => j.id !== deleteTarget.id));
-              setDeleteTarget(null);
+              cancelJob(cancelTarget.id);
+              setCancelTarget(null);
             }}
-            onClose={() => setDeleteTarget(null)}
+            onClose={() => setCancelTarget(null)}
           />
         )}
         {detailsJob && (

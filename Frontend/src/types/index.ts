@@ -10,10 +10,13 @@ export type JobDurationId = "1d" | "3d" | "5d" | "7d" | "14d" | "custom";
 
 export type JobComplexity = "small" | "medium";
 
+export type JobStatus = "open" | "closed" | "cancelled";
+
 export interface BrowseJob {
   id: string;
   title: string;
   category: JobCategoryId;
+  status?: JobStatus;
   description: string;
   skills: string[];
   budget: string;

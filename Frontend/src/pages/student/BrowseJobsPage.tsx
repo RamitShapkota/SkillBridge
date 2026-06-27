@@ -948,8 +948,10 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
   const toggleArr = (arr: string[], setArr: (a: string[]) => void, v: string) =>
     setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
+  const openJobs = useMemo(() => JOBS.filter((job) => (job.status ?? "open") === "open"), []);
+
   const filtered = useMemo(() => {
-    return JOBS.filter((job) => {
+    return openJobs.filter((job) => {
       const q = query.toLowerCase();
       const matchesQuery =
         !q ||
@@ -961,9 +963,9 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
       const matchesDur = !durations.length || durations.includes(job.duration);
       return matchesQuery && matchesCat && matchesComp && matchesDur;
     });
-  }, [query, categories, complexity, durations]);
+  }, [query, categories, complexity, durations, openJobs]);
 
-  const selectedJob = JOBS.find((j) => j.id === selectedId) ?? null;
+  const selectedJob = openJobs.find((j) => j.id === selectedId) ?? null;
   const hasFilters = query || categories.length || complexity.length || durations.length;
 
   const clearAll = () => {
@@ -1173,7 +1175,7 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
       <AnimatePresence>
         {applyingJobId &&
           (() => {
-            const job = JOBS.find((j) => j.id === applyingJobId);
+            const job = openJobs.find((j) => j.id === applyingJobId);
             return job ? (
               <ApplyModal key={applyingJobId} job={job} onClose={() => setApplyingJobId(null)} />
             ) : null;
