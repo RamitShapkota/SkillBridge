@@ -677,9 +677,6 @@ function JobDetailPanel({
           client={{
             name: "Dikshya Khanal",
             initials: "DK",
-            location: "Kathmandu, Nepal",
-            about:
-              "Looking for talented students to help build educational software and digital products.",
             jobsPosted: 8,
             projectsCompleted: 5,
             joinedDate: "Jun 2026",

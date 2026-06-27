@@ -7,9 +7,15 @@ import {
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { getProfile, setProfile } from "../../app/data/profileStore";
 import { updateAccountDetails } from "../../services/authService";
+import { getClientProfile, updateClientProfile } from "../../services/clientProfileService";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
-import { ConfirmDialog, StatusBadge } from "../../app/components/shared/ui";
+import {
+  ConfirmDialog,
+  Notification,
+  StatusBadge,
+  type NotificationMessage,
+} from "../../app/components/shared/ui";
 import {
   User,
   ShieldCheck,
@@ -165,7 +171,7 @@ function FileUploadRow({
 
 // Profile Information
 
-function ProfileSection() {
+function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage) => void }) {
   const currentUser = useDashboardCurrentUser();
   const [displayName, setDisplayName] = useState("");
   const [about, setAbout] = useState("");
@@ -179,12 +185,35 @@ function ProfileSection() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let mounted = true;
     const p = getProfile();
     setDisplayName(currentUser?.fullName || p.name);
-    setAbout(p.bio);
     setAvatarUrl(p.avatarUrl);
-    setWebsite(p.portfolio);
-  }, [currentUser]);
+
+    const loadClientProfile = async () => {
+      try {
+        const response = await getClientProfile();
+
+        if (!mounted || !response.data) return;
+
+        setAbout(response.data.bio ?? "");
+        setLocation(response.data.location ?? "");
+        setCompany(response.data.companyName ?? "");
+        setWebsite(response.data.website ?? "");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Client profile could not be loaded.";
+        if (mounted) {
+          onNotify({ type: "error", text: message });
+        }
+      }
+    };
+
+    loadClientProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser, onNotify]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -221,19 +250,30 @@ function ProfileSection() {
         email: currentUser.email,
       });
 
+      const response = await updateClientProfile({
+        bio: about,
+        location,
+        companyName: company,
+        website,
+      });
+
+      const updatedProfile = response.data;
+
       setProfile({
         name: displayName,
-        bio: about,
+        bio: updatedProfile.bio ?? about,
         avatarUrl,
-        portfolio: website,
+        portfolio: updatedProfile.website ?? website,
       });
       setSaving(false);
       setSaved(true);
       window.dispatchEvent(new Event("skillbridge:user-updated"));
+      onNotify({ type: "success", text: "Profile updated successfully." });
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Account could not be updated.";
       setSaving(false);
+      onNotify({ type: "error", text: message });
       setErrors({ displayName: message });
     }
   };
@@ -702,11 +742,12 @@ function AccountSection() {
 
 export default function ClientSettingsPage() {
   const [active, setActive] = useState<Section>("profile");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
   // Shared KYC status — drives the top-level reminder card visibility
   const [kycStatus, setKycStatus] = useState<KycStatus>("not-submitted");
 
   const CONTENT: Record<Section, React.ReactNode> = {
-    profile: <ProfileSection />,
+    profile: <ProfileSection onNotify={setNotification} />,
     kyc: <KycSection onStatusChange={setKycStatus} />,
     account: <AccountSection />,
   };
@@ -728,6 +769,7 @@ export default function ClientSettingsPage() {
       >
         {CONTENT[active]}
       </SettingsLayout>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </DashboardLayout>
   );
 }

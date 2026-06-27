@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { CheckCircle, MapPin, Briefcase, FolderCheck, CalendarDays } from "lucide-react";
+import { getClientProfile, type ClientProfileData } from "../../../services/clientProfileService";
 
 export interface ClientCardData {
   name: string;
@@ -11,9 +13,41 @@ export interface ClientCardData {
 }
 
 export function ClientInformationCard({ client }: { client: ClientCardData }) {
-  const initials = client.initials ?? client.name.slice(0, 2).toUpperCase();
+  const [profile, setProfile] = useState<ClientProfileData | null>(null);
+  const displayClient = {
+    ...client,
+    location: profile?.location ?? client.location,
+    about: profile?.bio ?? client.about,
+  };
+  const initials = displayClient.initials ?? displayClient.name.slice(0, 2).toUpperCase();
   const hasStats =
-    client.jobsPosted != null || client.projectsCompleted != null || client.joinedDate;
+    displayClient.jobsPosted != null ||
+    displayClient.projectsCompleted != null ||
+    displayClient.joinedDate;
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadClientProfile = async () => {
+      try {
+        const response = await getClientProfile();
+
+        if (mounted) {
+          setProfile(response.data);
+        }
+      } catch {
+        if (mounted) {
+          setProfile(null);
+        }
+      }
+    };
+
+    loadClientProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-4">
@@ -31,7 +65,7 @@ export function ClientInformationCard({ client }: { client: ClientCardData }) {
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
           <p className="text-slate-900 font-bold leading-tight" style={{ fontSize: "0.88rem" }}>
-            {client.name}
+            {displayClient.name}
           </p>
           <div className="flex items-center gap-1 mt-1">
             <CheckCircle className="w-3 h-3 text-emerald-600" />
@@ -39,11 +73,11 @@ export function ClientInformationCard({ client }: { client: ClientCardData }) {
               Verified Client
             </span>
           </div>
-          {client.location && (
+          {displayClient.location && (
             <div className="flex items-center gap-1 mt-1">
               <MapPin className="w-3 h-3 text-slate-400" />
               <span className="text-slate-500" style={{ fontSize: "0.72rem" }}>
-                {client.location}
+                {displayClient.location}
               </span>
             </div>
           )}
@@ -51,9 +85,9 @@ export function ClientInformationCard({ client }: { client: ClientCardData }) {
       </div>
 
       {/* About */}
-      {client.about && (
+      {displayClient.about && (
         <p className="text-slate-500 leading-relaxed" style={{ fontSize: "0.75rem" }}>
-          {client.about}
+          {displayClient.about}
         </p>
       )}
 
@@ -62,33 +96,33 @@ export function ClientInformationCard({ client }: { client: ClientCardData }) {
         <>
           <div className="h-px bg-slate-200" />
           <div className="flex flex-wrap gap-3">
-            {client.jobsPosted != null && (
+            {displayClient.jobsPosted != null && (
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center">
                   <Briefcase className="w-3 h-3 text-blue-600" />
                 </div>
                 <span className="text-slate-900 font-semibold" style={{ fontSize: "0.72rem" }}>
-                  {client.jobsPosted} Jobs Posted
+                  {displayClient.jobsPosted} Jobs Posted
                 </span>
               </div>
             )}
-            {client.projectsCompleted != null && (
+            {displayClient.projectsCompleted != null && (
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
                   <FolderCheck className="w-3 h-3 text-emerald-600" />
                 </div>
                 <span className="text-slate-900 font-semibold" style={{ fontSize: "0.72rem" }}>
-                  {client.projectsCompleted} Projects Completed
+                  {displayClient.projectsCompleted} Projects Completed
                 </span>
               </div>
             )}
-            {client.joinedDate && (
+            {displayClient.joinedDate && (
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center">
                   <CalendarDays className="w-3 h-3 text-violet-600" />
                 </div>
                 <span className="text-slate-900 font-semibold" style={{ fontSize: "0.72rem" }}>
-                  Joined {client.joinedDate}
+                  Joined {displayClient.joinedDate}
                 </span>
               </div>
             )}
