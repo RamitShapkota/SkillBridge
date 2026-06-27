@@ -36,6 +36,11 @@ function SocialIcon({
   href: string;
 }) {
   const [hovered, setHovered] = useState(false);
+  const linkHref =
+    href.toLowerCase().startsWith("http://") || href.toLowerCase().startsWith("https://")
+      ? href
+      : `https://${href}`;
+
   return (
     <div
       className="relative"
@@ -43,7 +48,7 @@ function SocialIcon({
       onMouseLeave={() => setHovered(false)}
     >
       <a
-        href={`https://${href}`}
+        href={linkHref}
         target="_blank"
         rel="noopener noreferrer"
         className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"

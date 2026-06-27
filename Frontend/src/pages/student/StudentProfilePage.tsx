@@ -94,46 +94,55 @@ import {
   useDashboardCurrentUser,
 } from "../../app/components/layout/DashboardLayout";
 import { StudentProfileView } from "../../app/components/shared/StudentProfileView";
-import { getProfile, subscribeProfile } from "../../app/data/profileStore";
+import { getProfile, setProfile, subscribeProfile } from "../../app/data/profileStore";
 import { PROJECTS } from "../../app/data/projects";
+import { getStudentProfile } from "../../services/studentProfileService";
 
-// Default static data shown when the store is empty (new user hasn't saved settings yet)
-const DEFAULTS = {
-  headline: "Computer Engineering Student",
-  bio: "Computer Engineering student passionate about web development, React, UI design, and building modern digital products.",
-  verified: true,
-  skills: [
-    { name: "React", verified: true },
-    { name: "Figma", verified: true },
-    { name: "UI Design", verified: true },
-    { name: "TailwindCSS", verified: true },
-    { name: "JavaScript", verified: false },
-    { name: "TypeScript", verified: false },
-    { name: "Node.js", verified: false },
-    { name: "Framer", verified: false },
-  ],
-  rating: 4.8,
-  reviewCount: 12,
-  github: "github.com/ramitsharma",
-  linkedin: "linkedin.com/in/ramitsharma",
-  portfolio: "ramitsharma.com",
-};
+const DEFAULT_RATING = 0;
+const DEFAULT_REVIEW_COUNT = 0;
 
 function StudentProfileContent() {
   const currentUser = useDashboardCurrentUser();
   const [shareOpen, setShareOpen] = useState(false);
   const [profile, setProfileState] = useState(getProfile());
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadStudentProfile = async () => {
+      try {
+        const response = await getStudentProfile();
+
+        if (!mounted || !response.data) return;
+
+        setProfile({
+          bio: response.data.bio ?? "",
+          education: response.data.education ?? "",
+          university: response.data.university ?? "",
+          skills: response.data.skills ?? [],
+          github: response.data.github ?? "",
+          linkedin: response.data.linkedin ?? "",
+          portfolio: response.data.portfolio ?? "",
+        });
+      } catch (error) {
+        // A new student may not have saved profile details yet.
+      }
+    };
+
+    loadStudentProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Re-render whenever Settings saves to the store
   useEffect(() => subscribeProfile(() => setProfileState(getProfile())), []);
 
-  // Merge store data with defaults: if the store field is non-empty, prefer it
+  // User owns the name; StudentProfile owns the profile details.
   const p = profile;
-  const name = p.name || currentUser?.fullName || "";
-  const bio = p.bio || DEFAULTS.bio;
-  const github = p.github || DEFAULTS.github;
-  const linkedin = p.linkedin || DEFAULTS.linkedin;
-  const portfolio = p.portfolio || DEFAULTS.portfolio;
+  const name = currentUser?.fullName || "";
+  const bio = p.bio;
   const initials = name
     .trim()
     .split(" ")
@@ -141,13 +150,10 @@ function StudentProfileContent() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const skills =
-    p.skills.length > 0
-      ? p.skills.map((s) => ({
-          name: s,
-          verified: DEFAULTS.skills.some((d) => d.verified && d.name === s),
-        }))
-      : DEFAULTS.skills;
+  const skills = p.skills.map((s) => ({
+    name: s,
+    verified: false,
+  }));
 
   const completedProjectsCount = PROJECTS.filter((pr) => pr.status === "completed").length;
 
@@ -175,20 +181,16 @@ function StudentProfileContent() {
           profile={{
             name,
             initials,
-            headline: p.bio
-              ? p.education
-                ? `${p.education} Student`
-                : DEFAULTS.headline
-              : DEFAULTS.headline,
+            headline: p.education ? `${p.education} Student` : "",
             bio,
-            verified: DEFAULTS.verified,
+            verified: false,
             skills,
-            rating: DEFAULTS.rating,
-            reviewCount: DEFAULTS.reviewCount,
+            rating: DEFAULT_RATING,
+            reviewCount: DEFAULT_REVIEW_COUNT,
             completedProjectsCount,
-            github: github || undefined,
-            linkedin: linkedin || undefined,
-            portfolio: portfolio || undefined,
+            github: p.github || undefined,
+            linkedin: p.linkedin || undefined,
+            portfolio: p.portfolio || undefined,
           }}
         />
       </motion.div>

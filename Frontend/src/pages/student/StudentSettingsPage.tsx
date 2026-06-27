@@ -5,11 +5,13 @@ import {
   useDashboardCurrentUser,
 } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
-import { getProfile, setProfile } from "../../app/data/profileStore";
+import { getProfile, setProfile, subscribeProfile } from "../../app/data/profileStore";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { VerificationForm } from "../../app/components/shared/VerificationForm";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
-import { ConfirmDialog } from "../../app/components/shared/ui";
+import { ConfirmDialog, Notification, type NotificationMessage } from "../../app/components/shared/ui";
+import { getStudentProfile, updateStudentProfile } from "../../services/studentProfileService";
+import { updateAccountDetails } from "../../services/auth/authService";
 import {
   User,
   Link2,
@@ -283,7 +285,7 @@ function SkillsComboBox({
 
 // Profile Information
 
-function ProfileSection() {
+function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage) => void }) {
   const currentUser = useDashboardCurrentUser();
   const [displayName, setDisplayName] = useState("");
   const [about, setAbout] = useState("");
@@ -298,13 +300,18 @@ function ProfileSection() {
 
   // Hydrate from store on mount
   useEffect(() => {
-    const p = getProfile();
-    setDisplayName((prev) => prev || p.name || currentUser?.fullName || "");
-    setAbout(p.bio);
-    setEducation(p.education);
-    setUniversity(p.university);
-    setSkills(p.skills);
-    setAvatarUrl(p.avatarUrl);
+    const loadProfileFromStore = () => {
+      const p = getProfile();
+      setDisplayName((prev) => prev || currentUser?.fullName || "");
+      setAbout(p.bio);
+      setEducation(p.education);
+      setUniversity(p.university);
+      setSkills(p.skills);
+      setAvatarUrl(p.avatarUrl);
+    };
+
+    loadProfileFromStore();
+    return subscribeProfile(loadProfileFromStore);
   }, [currentUser]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,18 +332,52 @@ function ProfileSection() {
     return e;
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+
+    if (!currentUser?.email) {
+      onNotify({ type: "error", text: "Current user could not be loaded." });
+      return;
+    }
+
     setSaving(true);
-    setTimeout(() => {
-      setProfile({ name: displayName, bio: about, education, university, skills, avatarUrl });
+    setSaved(false);
+
+    try {
+      const accountResponse = await updateAccountDetails({
+        fullName: displayName,
+        email: currentUser?.email ?? "",
+      });
+
+      const response = await updateStudentProfile({
+        bio: about,
+        education,
+        university,
+        skills,
+      });
+
+      const updatedProfile = response.data;
+
+      setProfile({
+        bio: updatedProfile.bio ?? about,
+        education: updatedProfile.education ?? education,
+        university: updatedProfile.university ?? university,
+        skills: updatedProfile.skills ?? skills,
+        avatarUrl,
+      });
+      window.dispatchEvent(new Event("skillbridge:user-updated"));
       setSaving(false);
       setSaved(true);
+      onNotify({ type: "success", text: "Profile updated successfully." });
       setTimeout(() => setSaved(false), 3000);
-    }, 900);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Profile could not be updated.";
+      setSaving(false);
+      onNotify({ type: "error", text: message });
+    }
   };
 
   const initials = displayName.trim()
@@ -479,29 +520,107 @@ function ProfileSection() {
 
 // Social Links
 
-function SocialSection() {
+function SocialSection({ onNotify }: { onNotify: (message: NotificationMessage) => void }) {
   const [github, setGithub] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [portfolio, setPortfolio] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const p = getProfile();
-    setGithub(p.github);
-    setLinkedin(p.linkedin);
-    setPortfolio(p.portfolio);
+    const loadProfileFromStore = () => {
+      const p = getProfile();
+      setGithub(p.github);
+      setLinkedin(p.linkedin);
+      setPortfolio(p.portfolio);
+    };
+
+    loadProfileFromStore();
+    return subscribeProfile(loadProfileFromStore);
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const normalizeUrl = (value: string) => {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) return "";
+
+    if (
+      trimmedValue.toLowerCase().startsWith("http://") ||
+      trimmedValue.toLowerCase().startsWith("https://")
+    ) {
+      return trimmedValue;
+    }
+
+    return `https://${trimmedValue}`;
+  };
+
+  const isValidUrl = (value: string) => {
+    if (!value) return true;
+
+    try {
+      const url = new URL(value);
+      return (
+        (url.protocol === "http:" || url.protocol === "https:") &&
+        url.hostname.includes(".") &&
+        /[a-z]/i.test(url.hostname)
+      );
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+
+    const normalizedGithub = normalizeUrl(github);
+    const normalizedLinkedin = normalizeUrl(linkedin);
+    const normalizedPortfolio = normalizeUrl(portfolio);
+
+    if (!isValidUrl(normalizedGithub)) e.github = "Enter a valid URL";
+    if (!isValidUrl(normalizedLinkedin)) e.linkedin = "Enter a valid URL";
+    if (!isValidUrl(normalizedPortfolio)) e.portfolio = "Enter a valid URL";
+
+    return {
+      errors: e,
+      values: {
+        github: normalizedGithub,
+        linkedin: normalizedLinkedin,
+        portfolio: normalizedPortfolio,
+      },
+    };
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const result = validate();
+    setErrors(result.errors);
+    if (Object.keys(result.errors).length > 0) return;
+
     setSaving(true);
-    setTimeout(() => {
-      setProfile({ github, linkedin, portfolio });
+    setSaved(false);
+
+    try {
+      const response = await updateStudentProfile(result.values);
+      const updatedProfile = response.data;
+
+      setProfile({
+        github: updatedProfile.github ?? result.values.github,
+        linkedin: updatedProfile.linkedin ?? result.values.linkedin,
+        portfolio: updatedProfile.portfolio ?? result.values.portfolio,
+      });
+      setGithub(updatedProfile.github ?? result.values.github);
+      setLinkedin(updatedProfile.linkedin ?? result.values.linkedin);
+      setPortfolio(updatedProfile.portfolio ?? result.values.portfolio);
       setSaving(false);
       setSaved(true);
+      onNotify({ type: "success", text: "Profile updated successfully." });
       setTimeout(() => setSaved(false), 3000);
-    }, 900);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Profile could not be updated.";
+      setSaving(false);
+      onNotify({ type: "error", text: message });
+    }
   };
 
   const fields = [
@@ -511,7 +630,7 @@ function SocialSection() {
       label: "GitHub URL",
       value: github,
       set: setGithub,
-      type: "url",
+      type: "text",
       placeholder: "https://github.com/username",
     },
     {
@@ -520,7 +639,7 @@ function SocialSection() {
       label: "LinkedIn URL",
       value: linkedin,
       set: setLinkedin,
-      type: "url",
+      type: "text",
       placeholder: "https://linkedin.com/in/username",
     },
     {
@@ -529,7 +648,7 @@ function SocialSection() {
       label: "Portfolio Website",
       value: portfolio,
       set: setPortfolio,
-      type: "url",
+      type: "text",
       placeholder: "https://yourportfolio.com",
     },
   ];
@@ -562,6 +681,7 @@ function SocialSection() {
                   style={{ fontSize: "0.875rem" }}
                 />
               </div>
+              <ErrorMsg msg={errors[f.key] ?? ""} />
             </div>
           );
         })}
@@ -661,10 +781,44 @@ function AccountSection() {
 
 export default function StudentSettingsPage() {
   const [active, setActive] = useState<SettingsSection>("profile");
+  const [notification, setNotification] = useState<NotificationMessage>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadStudentProfile = async () => {
+      try {
+        const response = await getStudentProfile();
+
+        if (!mounted || !response.data) return;
+
+        setProfile({
+          bio: response.data.bio ?? "",
+          education: response.data.education ?? "",
+          university: response.data.university ?? "",
+          skills: response.data.skills ?? [],
+          github: response.data.github ?? "",
+          linkedin: response.data.linkedin ?? "",
+          portfolio: response.data.portfolio ?? "",
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Student profile could not be loaded.";
+        if (mounted) {
+          setNotification({ type: "error", text: message });
+        }
+      }
+    };
+
+    loadStudentProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const CONTENT: Record<SettingsSection, React.ReactNode> = {
-    profile: <ProfileSection />,
-    social: <SocialSection />,
+    profile: <ProfileSection onNotify={setNotification} />,
+    social: <SocialSection onNotify={setNotification} />,
     verification: <VerificationSection />,
     account: <AccountSection />,
   };
@@ -680,6 +834,7 @@ export default function StudentSettingsPage() {
       >
         {CONTENT[active]}
       </SettingsLayout>
+      <Notification message={notification} onClose={() => setNotification(null)} />
     </DashboardLayout>
   );
 }

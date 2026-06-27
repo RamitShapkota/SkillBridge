@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import { globalErrorHandler } from "./middlewares/error.middleware.js";
 import userRouter from "./routes/user.routes.js";
 import jobRouter from "./routes/job.routes.js";
+import studentRouter from "./routes/student.routes.js";
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use(cookieParser());
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/jobs", jobRouter);
+app.use("/api/v1/student", studentRouter);
 
 app.use(globalErrorHandler);
 

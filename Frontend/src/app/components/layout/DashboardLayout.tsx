@@ -773,12 +773,18 @@ export function DashboardLayout({
   useEffect(() => {
     let mounted = true;
 
-    loadDashboardCurrentUser().then((user) => {
-      if (mounted) setCurrentUser(user);
-    });
+    const refreshCurrentUser = () => {
+      loadDashboardCurrentUser().then((user) => {
+        if (mounted) setCurrentUser(user);
+      });
+    };
+
+    refreshCurrentUser();
+    window.addEventListener("skillbridge:user-updated", refreshCurrentUser);
 
     return () => {
       mounted = false;
+      window.removeEventListener("skillbridge:user-updated", refreshCurrentUser);
     };
   }, []);
 

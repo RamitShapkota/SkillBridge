@@ -183,6 +183,28 @@ export const changePassword = async (passwordData: {
   return data;
 };
 
+export const updateAccountDetails = async (accountData: {
+  fullName: string;
+  email: string;
+}): Promise<ApiResponse<AuthUser>> => {
+  const response = await fetch(`${API_URL}/update-account`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(accountData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
+
 
 
 
