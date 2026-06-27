@@ -11,7 +11,7 @@ import { VerificationForm } from "../../app/components/shared/VerificationForm";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
 import { ConfirmDialog, Notification, type NotificationMessage } from "../../app/components/shared/ui";
 import { getStudentProfile, updateStudentProfile } from "../../services/studentProfileService";
-import { updateAccountDetails } from "../../services/authService";
+import { updateAccountDetails, uploadAvatar } from "../../services/authService";
 import {
   User,
   Link2,
@@ -307,19 +307,27 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
       setEducation(p.education);
       setUniversity(p.university);
       setSkills(p.skills);
-      setAvatarUrl(p.avatarUrl);
+      setAvatarUrl(currentUser?.avatar ?? "");
     };
 
     loadProfileFromStore();
     return subscribeProfile(loadProfileFromStore);
   }, [currentUser]);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setAvatarUrl(url);
     e.target.value = "";
+
+    try {
+      const response = await uploadAvatar(file);
+      setAvatarUrl(response.data.avatar ?? "");
+      window.dispatchEvent(new Event("skillbridge:user-updated"));
+      onNotify({ type: "success", text: "Profile picture updated successfully." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Profile picture could not be updated.";
+      onNotify({ type: "error", text: message });
+    }
   };
 
   const validate = () => {
@@ -366,7 +374,6 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
         education: updatedProfile.education ?? education,
         university: updatedProfile.university ?? university,
         skills: updatedProfile.skills ?? skills,
-        avatarUrl,
       });
       window.dispatchEvent(new Event("skillbridge:user-updated"));
       setSaving(false);

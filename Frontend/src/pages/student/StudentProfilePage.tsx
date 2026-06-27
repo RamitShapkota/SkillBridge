@@ -191,6 +191,7 @@ function StudentProfileContent() {
             github: p.github || undefined,
             linkedin: p.linkedin || undefined,
             portfolio: p.portfolio || undefined,
+            avatarUrl: currentUser?.avatar,
           }}
         />
       </motion.div>

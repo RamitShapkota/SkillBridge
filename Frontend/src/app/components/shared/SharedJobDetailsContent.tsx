@@ -110,6 +110,7 @@ export interface JobDetailData {
   // Client info (omit for client's own dashboard view)
   clientName?: string;
   clientInitials?: string;
+  clientAvatar?: string;
   clientLocation?: string;
   clientAbout?: string;
   clientJobsPosted?: number;
@@ -377,6 +378,7 @@ export function SharedJobDetailsContent({ job, actions, showClientCard = true }:
             client={{
               name: job.clientName,
               initials: job.clientInitials,
+              avatar: job.clientAvatar,
               location: job.clientLocation,
               about: job.clientAbout,
               jobsPosted: job.clientJobsPosted,

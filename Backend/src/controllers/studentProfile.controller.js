@@ -40,7 +40,7 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
       $setOnInsert: { user: req.user._id },
     },
     {
-      new: true,
+      returnDocument: "after",
       upsert: true,
       runValidators: true,
     }

@@ -6,7 +6,7 @@ import {
 } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { getProfile, setProfile } from "../../app/data/profileStore";
-import { updateAccountDetails } from "../../services/authService";
+import { updateAccountDetails, uploadAvatar } from "../../services/authService";
 import { getClientProfile, updateClientProfile } from "../../services/clientProfileService";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
@@ -188,7 +188,7 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
     let mounted = true;
     const p = getProfile();
     setDisplayName(currentUser?.fullName || p.name);
-    setAvatarUrl(p.avatarUrl);
+    setAvatarUrl(currentUser?.avatar ?? "");
 
     const loadClientProfile = async () => {
       try {
@@ -215,11 +215,20 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
     };
   }, [currentUser, onNotify]);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setAvatarUrl(URL.createObjectURL(file));
     e.target.value = "";
+
+    try {
+      const response = await uploadAvatar(file);
+      setAvatarUrl(response.data.avatar ?? "");
+      window.dispatchEvent(new Event("skillbridge:user-updated"));
+      onNotify({ type: "success", text: "Profile picture updated successfully." });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Profile picture could not be updated.";
+      onNotify({ type: "error", text: message });
+    }
   };
 
   const validate = () => {
@@ -262,7 +271,6 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
       setProfile({
         name: displayName,
         bio: updatedProfile.bio ?? about,
-        avatarUrl,
         portfolio: updatedProfile.website ?? website,
       });
       setSaving(false);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, MapPin, Briefcase, FolderCheck, CalendarDays } from "lucide-react";
+import { useDashboardCurrentUser } from "../layout/DashboardLayout";
 import { getClientProfile, type ClientProfileData } from "../../../services/clientProfileService";
 
 export interface ClientCardData {
@@ -7,17 +8,20 @@ export interface ClientCardData {
   initials?: string;
   location?: string;
   about?: string;
+  avatar?: string;
   jobsPosted?: number;
   projectsCompleted?: number;
   joinedDate?: string;
 }
 
 export function ClientInformationCard({ client }: { client: ClientCardData }) {
+  const currentUser = useDashboardCurrentUser();
   const [profile, setProfile] = useState<ClientProfileData | null>(null);
   const displayClient = {
     ...client,
     location: profile?.location ?? client.location,
     about: profile?.bio ?? client.about,
+    avatar: client.avatar ?? (currentUser?.role === "client" ? currentUser.avatar : undefined),
   };
   const initials = displayClient.initials ?? displayClient.name.slice(0, 2).toUpperCase();
   const hasStats =
@@ -58,10 +62,14 @@ export function ClientInformationCard({ client }: { client: ClientCardData }) {
       {/* Avatar + name + badge */}
       <div className="flex items-start gap-3">
         <div
-          className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold shrink-0"
+          className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold shrink-0 overflow-hidden"
           style={{ fontSize: "0.65rem" }}
         >
-          {initials}
+          {displayClient.avatar ? (
+            <img src={displayClient.avatar} alt={displayClient.name} className="w-full h-full object-cover" />
+          ) : (
+            initials
+          )}
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
           <p className="text-slate-900 font-bold leading-tight" style={{ fontSize: "0.88rem" }}>

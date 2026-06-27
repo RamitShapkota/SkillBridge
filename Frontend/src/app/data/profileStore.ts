@@ -2,7 +2,6 @@
 // Settings writes here; profile views read from here.
 
 export interface ProfileData {
-  avatarUrl: string; // object URL or data URL of uploaded image; "" = show initials
   name: string;
   bio: string;
   education: string;
@@ -14,7 +13,6 @@ export interface ProfileData {
 }
 
 const DEFAULT: ProfileData = {
-  avatarUrl: "",
   name: "",
   bio: "",
   education: "",

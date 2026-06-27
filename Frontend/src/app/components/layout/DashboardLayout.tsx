@@ -260,6 +260,7 @@ function Sidebar({
   const displayName = currentUser?.fullName || config.user.name;
   const displayRole = currentUser?.role ? formatRole(currentUser.role) : config.user.label;
   const displayInitials = getInitials(displayName) || config.user.initials;
+  const displayAvatar = currentUser?.avatar;
 
   const handleMouseEnter = () => {
     clearTimeout(collapseTimer.current);
@@ -465,10 +466,14 @@ function Sidebar({
           className={`flex items-center rounded-xl p-3 bg-slate-50 border border-black/[0.05] transition-all duration-200 ${!expanded ? "justify-center" : "gap-3"}`}
         >
           <div
-            className={`w-7 h-7 rounded-lg ${config.user.avatarClassName} flex items-center justify-center text-white shrink-0`}
+            className={`w-7 h-7 rounded-lg ${config.user.avatarClassName} flex items-center justify-center text-white shrink-0 overflow-hidden`}
             style={{ fontSize: "0.6rem", fontWeight: 800 }}
           >
-            {displayInitials}
+            {displayAvatar ? (
+              <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              displayInitials
+            )}
           </div>
           <AnimatePresence>
             {expanded && (
@@ -521,6 +526,7 @@ function TopNavbar({
   const displayName = currentUser?.fullName || config.user.name;
   const displayRole = currentUser?.role ? formatRole(currentUser.role) : config.user.label;
   const displayInitials = getInitials(displayName) || config.user.initials;
+  const displayAvatar = currentUser?.avatar;
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -553,10 +559,14 @@ function TopNavbar({
             className="flex items-center gap-2.5 pl-1 pr-3 py-1.5 rounded-xl hover:bg-slate-50 transition-colors"
           >
             <div
-              className={`w-8 h-8 rounded-xl ${config.user.avatarClassName} flex items-center justify-center text-white`}
+              className={`w-8 h-8 rounded-xl ${config.user.avatarClassName} flex items-center justify-center text-white overflow-hidden`}
               style={{ fontSize: "0.65rem", fontWeight: 800 }}
             >
-              {displayInitials}
+              {displayAvatar ? (
+                <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                displayInitials
+              )}
             </div>
             <div className="hidden sm:block text-left">
               <p

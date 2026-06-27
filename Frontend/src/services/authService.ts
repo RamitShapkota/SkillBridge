@@ -9,6 +9,7 @@ export type AuthUser = {
   fullName: string;
   email: string;
   role: Role;
+  avatar?: string;
 };
 
 type ApiResponse<T> = {
@@ -194,6 +195,25 @@ export const updateAccountDetails = async (accountData: {
     },
     credentials: "include",
     body: JSON.stringify(accountData),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+};
+
+export const uploadAvatar = async (avatar: File): Promise<ApiResponse<AuthUser>> => {
+  const formData = new FormData();
+  formData.append("avatar", avatar);
+
+  const response = await fetch(`${API_URL}/avatar`, {
+    method: "PATCH",
+    credentials: "include",
+    body: formData,
   });
 
   const data = await response.json();

@@ -1,6 +1,5 @@
 import { useState, useEffect, type ElementType } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { getProfile, subscribeProfile } from "../../data/profileStore";
 import { REVIEWS } from "../../data/reviews";
 import { PROJECTS } from "../../data/projects";
 import { Github, Linkedin, Globe, Star, CheckCircle, Briefcase } from "lucide-react";
@@ -20,7 +19,7 @@ export interface ProfileViewProps {
   github?: string;
   linkedin?: string;
   portfolio?: string;
-  /** Pass an explicit avatar URL, or omit to auto-read from the profile store */
+  /** User.avatar from MongoDB */
   avatarUrl?: string;
 }
 
@@ -88,10 +87,7 @@ function SocialIcon({
 // ── Section 1: Profile Overview ───────────────────────────────────────────────
 
 function ProfileOverview({ profile }: { profile: ProfileViewProps }) {
-  // Reactively track store avatar so profile photo syncs after Settings save
-  const [storeAvatar, setStoreAvatar] = useState(getProfile().avatarUrl);
-  useEffect(() => subscribeProfile(() => setStoreAvatar(getProfile().avatarUrl)), []);
-  const avatar = profile.avatarUrl ?? storeAvatar;
+  const avatar = profile.avatarUrl;
 
   const socialLinks = [
     profile.github && { icon: Github, label: "GitHub", href: profile.github },
