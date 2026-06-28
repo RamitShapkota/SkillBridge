@@ -182,6 +182,8 @@ function StudentProfileContent() {
             name,
             initials,
             headline: p.education ? `${p.education} Student` : "",
+            education: p.education,
+            university: p.university,
             bio,
             verified: false,
             skills,

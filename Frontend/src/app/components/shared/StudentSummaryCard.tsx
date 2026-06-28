@@ -6,6 +6,7 @@ export interface StudentSummaryCardProps {
   initials: string;
   name: string;
   headline: string;
+  education?: string;
   verified: boolean;
   rating: number;
   reviewCount: number;
@@ -25,6 +26,7 @@ export function StudentSummaryCard({
   initials,
   name,
   headline,
+  education,
   verified,
   rating,
   reviewCount,
@@ -69,6 +71,11 @@ export function StudentSummaryCard({
                 </span>
               )}
             </div>
+            {education && (
+              <p className="text-slate-400" style={{ fontSize: "0.7rem" }}>
+                {education}
+              </p>
+            )}
             <p className="text-slate-400" style={{ fontSize: "0.7rem" }}>
               {headline}
             </p>
@@ -89,21 +96,18 @@ export function StudentSummaryCard({
           </span>
         </div>
         <span className="text-slate-300" style={{ fontSize: "0.65rem" }}>
-          ·
+          {"\u00b7"}
         </span>
         <span className="text-slate-500" style={{ fontSize: "0.72rem" }}>
-          {completedProjects} Projects
+          <strong className="font-semibold">{completedProjects}</strong> Completed Projects
         </span>
-        {verifiedCount > 0 && (
-          <>
-            <span className="text-slate-300" style={{ fontSize: "0.65rem" }}>
-              ·
-            </span>
-            <span className="text-emerald-600" style={{ fontSize: "0.72rem" }}>
-              {verifiedCount} Verified Skill{verifiedCount !== 1 ? "s" : ""}
-            </span>
-          </>
-        )}
+        <span className="text-slate-300" style={{ fontSize: "0.65rem" }}>
+          {"\u00b7"}
+        </span>
+        <span className="text-emerald-600" style={{ fontSize: "0.72rem" }}>
+          <strong className="font-semibold">{verifiedCount}</strong> Verified Skill
+          {verifiedCount !== 1 ? "s" : ""}
+        </span>
       </div>
 
       {/* Row 3 — top skills */}

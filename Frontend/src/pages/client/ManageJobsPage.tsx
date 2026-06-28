@@ -36,6 +36,7 @@ interface Applicant {
   id: string;
   name: string;
   initials: string;
+  education: string;
   university: string;
   verified: boolean;
   skills: VerifiedSkill[];
@@ -93,6 +94,7 @@ const JOBS_INIT: Job[] = [
         id: "a1",
         name: "Priya Sharma",
         initials: "PS",
+        education: "BE Computer Engineering",
         university: "Kathmandu University",
         verified: true,
         skills: [
@@ -115,6 +117,7 @@ const JOBS_INIT: Job[] = [
         id: "a2",
         name: "Roshan Bhandari",
         initials: "RB",
+        education: "BSc CSIT",
         university: "NCIT",
         verified: true,
         skills: [
@@ -134,6 +137,7 @@ const JOBS_INIT: Job[] = [
         id: "a3",
         name: "Sita Adhikari",
         initials: "SA",
+        education: "Bachelor in Graphic Design",
         university: "Tribhuvan University",
         verified: false,
         skills: [
@@ -171,6 +175,7 @@ const JOBS_INIT: Job[] = [
         id: "a4",
         name: "Bikash Rai",
         initials: "BR",
+        education: "BE Software Engineering",
         university: "Pokhara University",
         verified: true,
         skills: [
@@ -191,6 +196,7 @@ const JOBS_INIT: Job[] = [
         id: "a5",
         name: "Ramit Sonar",
         initials: "RS",
+        education: "BE Computer Engineering",
         university: "Kathmandu University",
         verified: true,
         skills: [
@@ -229,6 +235,7 @@ const JOBS_INIT: Job[] = [
         id: "a6",
         name: "Manisha Poudel",
         initials: "MP",
+        education: "BA Mass Communication",
         university: "Butwal University",
         verified: false,
         skills: [
@@ -266,6 +273,7 @@ const JOBS_INIT: Job[] = [
         id: "a7",
         name: "Aakash Thapa",
         initials: "AT",
+        education: "Bachelor in Graphic Design",
         university: "Tribhuvan University",
         verified: true,
         skills: [
@@ -537,6 +545,8 @@ function StudentProfilePanel({
     name: applicant.name,
     initials: applicant.initials,
     headline: applicant.university,
+    education: applicant.education,
+    university: applicant.university,
     bio: applicant.bio,
     verified: applicant.verified,
     skills: applicant.skills,
@@ -762,6 +772,7 @@ function ApplicationsPanel({
                     key={a.id}
                     initials={a.initials}
                     name={a.name}
+                    education={a.education}
                     headline={a.university}
                     verified={a.verified}
                     rating={a.rating}

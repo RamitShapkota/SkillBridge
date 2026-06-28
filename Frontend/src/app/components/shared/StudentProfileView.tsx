@@ -10,6 +10,8 @@ export interface ProfileViewProps {
   name: string;
   initials: string;
   headline: string;
+  education?: string;
+  university?: string;
   bio: string;
   verified: boolean;
   skills: { name: string; verified: boolean }[];
@@ -88,6 +90,7 @@ function SocialIcon({
 
 function ProfileOverview({ profile }: { profile: ProfileViewProps }) {
   const avatar = profile.avatarUrl;
+  const verifiedSkillsCount = profile.skills.filter((skill) => skill.verified).length;
 
   const socialLinks = [
     profile.github && { icon: Github, label: "GitHub", href: profile.github },
@@ -130,9 +133,21 @@ function ProfileOverview({ profile }: { profile: ProfileViewProps }) {
               </span>
             )}
           </div>
-          <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>
-            {profile.headline}
-          </p>
+          {profile.education && (
+            <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>
+              {profile.education}
+            </p>
+          )}
+          {profile.university && (
+            <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>
+              {profile.university}
+            </p>
+          )}
+          {!profile.education && !profile.university && profile.headline && (
+            <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>
+              {profile.headline}
+            </p>
+          )}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             <Star className="w-3.5 h-3.5" fill="#F59E0B" color="#F59E0B" />
             <span className="text-slate-900 font-semibold" style={{ fontSize: "0.78rem" }}>
@@ -142,10 +157,20 @@ function ProfileOverview({ profile }: { profile: ProfileViewProps }) {
               ({profile.reviewCount} Reviews)
             </span>
             <span className="text-slate-300" style={{ fontSize: "0.72rem" }}>
-              ·
+              {"\u00b7"}
             </span>
             <span className="text-slate-400" style={{ fontSize: "0.72rem" }}>
-              {profile.completedProjectsCount} Completed Projects
+              <strong className="text-slate-500 font-semibold">
+                {profile.completedProjectsCount}
+              </strong>{" "}
+              Completed Projects
+            </span>
+            <span className="text-slate-300" style={{ fontSize: "0.72rem" }}>
+              {"\u00b7"}
+            </span>
+            <span className="text-slate-400" style={{ fontSize: "0.72rem" }}>
+              <strong className="text-slate-500 font-semibold">{verifiedSkillsCount}</strong>{" "}
+              Verified Skill{verifiedSkillsCount !== 1 ? "s" : ""}
             </span>
           </div>
           {socialLinks.length > 0 && (
