@@ -8,8 +8,19 @@ import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { getProfile, setProfile, subscribeProfile } from "../../app/data/profileStore";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { VerificationForm } from "../../app/components/shared/VerificationForm";
+import {
+  getVerificationDisplayStatus,
+  VerificationDocumentsSection,
+  VerificationHelpMessage,
+  VerificationStatusCard,
+  type VerificationDisplayStatus,
+} from "../../app/components/shared/VerificationStatusCard";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
-import { ConfirmDialog, Notification, type NotificationMessage } from "../../app/components/shared/ui";
+import {
+  ConfirmDialog,
+  Notification,
+  type NotificationMessage,
+} from "../../app/components/shared/ui";
 import { getStudentProfile, updateStudentProfile } from "../../services/studentProfileService";
 import { updateAccountDetails, uploadAvatar } from "../../services/authService";
 import {
@@ -325,7 +336,8 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
       window.dispatchEvent(new Event("skillbridge:user-updated"));
       onNotify({ type: "success", text: "Profile picture updated successfully." });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Profile picture could not be updated.";
+      const message =
+        error instanceof Error ? error.message : "Profile picture could not be updated.";
       onNotify({ type: "error", text: message });
     }
   };
@@ -704,6 +716,11 @@ function SocialSection({ onNotify }: { onNotify: (message: NotificationMessage) 
 // Identity Verification
 
 function VerificationSection() {
+  const [verificationStatus, setVerificationStatus] = useState<VerificationDisplayStatus>(
+    getVerificationDisplayStatus(null)
+  );
+  const canSubmit = verificationStatus === "not-verified" || verificationStatus === "rejected";
+
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -711,11 +728,17 @@ function VerificationSection() {
           Identity Verification
         </h2>
         <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>
-          Verify your student identity to build trust with clients and unlock full platform
-          features.
+          Verify your student identity to build trust with clients and unlock platform features.
         </p>
       </div>
-      <VerificationForm />
+      <VerificationStatusCard status={verificationStatus} />
+      {canSubmit ? (
+        <VerificationDocumentsSection>
+          <VerificationForm onSubmitted={() => setVerificationStatus("pending")} />
+        </VerificationDocumentsSection>
+      ) : (
+        <VerificationHelpMessage status={verificationStatus} />
+      )}
     </div>
   );
 }
@@ -809,7 +832,8 @@ export default function StudentSettingsPage() {
           portfolio: response.data.portfolio ?? "",
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Student profile could not be loaded.";
+        const message =
+          error instanceof Error ? error.message : "Student profile could not be loaded.";
         if (mounted) {
           setNotification({ type: "error", text: message });
         }

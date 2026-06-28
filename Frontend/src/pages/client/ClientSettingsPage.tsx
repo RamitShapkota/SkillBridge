@@ -9,26 +9,21 @@ import { getProfile, setProfile } from "../../app/data/profileStore";
 import { updateAccountDetails, uploadAvatar } from "../../services/authService";
 import { getClientProfile, updateClientProfile } from "../../services/clientProfileService";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
+import { FileUpload, type UploadedFile } from "../../app/components/shared/VerificationForm";
+import {
+  getVerificationDisplayStatus,
+  VerificationDocumentsSection,
+  VerificationHelpMessage,
+  VerificationStatusCard,
+  type VerificationDisplayStatus,
+} from "../../app/components/shared/VerificationStatusCard";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
 import {
   ConfirmDialog,
   Notification,
-  StatusBadge,
   type NotificationMessage,
 } from "../../app/components/shared/ui";
-import {
-  User,
-  ShieldCheck,
-  Lock,
-  Check,
-  Upload,
-  X,
-  Trash2,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  XCircle,
-} from "lucide-react";
+import { User, ShieldCheck, Lock, Check, Upload, Trash2, AlertCircle } from "lucide-react";
 
 // Nav
 
@@ -111,64 +106,6 @@ function SaveButton({
   );
 }
 
-// File upload row
-
-function FileUploadRow({
-  label,
-  accept,
-  required,
-}: {
-  label: string;
-  accept: string;
-  required?: boolean;
-}) {
-  const [fileName, setFileName] = useState("");
-  const ref = useRef<HTMLInputElement>(null);
-  return (
-    <div className="flex flex-col gap-1.5">
-      <FieldLabel text={label} required={required} />
-      <div className="flex items-center gap-3">
-        <input
-          ref={ref}
-          type="file"
-          accept={accept}
-          className="hidden"
-          onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
-        />
-        <button
-          type="button"
-          onClick={() => ref.current?.click()}
-          className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-500 font-semibold px-3.5 py-2 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shrink-0"
-          style={{ fontSize: "0.75rem" }}
-        >
-          <Upload className="w-3.5 h-3.5" /> Choose File
-        </button>
-        {fileName ? (
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-slate-900 font-medium truncate" style={{ fontSize: "0.75rem" }}>
-              {fileName}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setFileName("");
-                if (ref.current) ref.current.value = "";
-              }}
-              className="text-slate-400 hover:text-red-400 transition-colors shrink-0"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <span className="text-slate-400" style={{ fontSize: "0.72rem" }}>
-            No file chosen
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // Profile Information
 
 function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage) => void }) {
@@ -201,7 +138,8 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
         setCompany(response.data.companyName ?? "");
         setWebsite(response.data.website ?? "");
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Client profile could not be loaded.";
+        const message =
+          error instanceof Error ? error.message : "Client profile could not be loaded.";
         if (mounted) {
           onNotify({ type: "error", text: message });
         }
@@ -226,7 +164,8 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
       window.dispatchEvent(new Event("skillbridge:user-updated"));
       onNotify({ type: "success", text: "Profile picture updated successfully." });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Profile picture could not be updated.";
+      const message =
+        error instanceof Error ? error.message : "Profile picture could not be updated.";
       onNotify({ type: "error", text: message });
     }
   };
@@ -430,83 +369,40 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
 
 // KYC Verification
 
-type KycStatus = "not-submitted" | "pending" | "verified" | "rejected";
-
-const KYC_STATUS_CFG: Record<
-  KycStatus,
-  {
-    label: string;
-    desc: string;
-    icon: React.ElementType;
-    iconColor: string;
-    iconBg: string;
-    badgeColor: string;
-    badgeBg: string;
-    badgeBorder: string;
-  }
-> = {
-  "not-submitted": {
-    label: "Not Verified",
-    desc: "You have not submitted verification documents yet.",
-    icon: ShieldCheck,
-    iconColor: "#94A3B8",
-    iconBg: "#F1F5F9",
-    badgeColor: "#64748B",
-    badgeBg: "#F8FAFC",
-    badgeBorder: "#E2E8F0",
-  },
-  pending: {
-    label: "Pending",
-    desc: "Your verification request is currently under review.",
-    icon: Clock,
-    iconColor: "#D97706",
-    iconBg: "#FFFBEB",
-    badgeColor: "#D97706",
-    badgeBg: "#FFFBEB",
-    badgeBorder: "#FDE68A",
-  },
-  verified: {
-    label: "Verified",
-    desc: "Your account has been successfully verified.",
-    icon: CheckCircle,
-    iconColor: "#059669",
-    iconBg: "#ECFDF5",
-    badgeColor: "#059669",
-    badgeBg: "#ECFDF5",
-    badgeBorder: "#6EE7B7",
-  },
-  rejected: {
-    label: "Rejected",
-    desc: "Your verification request was rejected. Please resubmit.",
-    icon: XCircle,
-    iconColor: "#DC2626",
-    iconBg: "#FEF2F2",
-    badgeColor: "#DC2626",
-    badgeBg: "#FEF2F2",
-    badgeBorder: "#FECACA",
-  },
-};
-
-function KycSection({ onStatusChange }: { onStatusChange?: (s: KycStatus) => void }) {
-  const [status, setStatus] = useState<KycStatus>("not-submitted");
-  const updateStatus = (s: KycStatus) => {
+function KycSection({
+  onStatusChange,
+}: {
+  onStatusChange?: (s: VerificationDisplayStatus) => void;
+}) {
+  const [status, setStatus] = useState<VerificationDisplayStatus>(
+    getVerificationDisplayStatus(null)
+  );
+  const updateStatus = (s: VerificationDisplayStatus) => {
     setStatus(s);
     onStatusChange?.(s);
   };
   const [legalName, setLegalName] = useState("");
   const [phone, setPhone] = useState("");
   const [companyKyc, setCompanyKyc] = useState("");
+  const [citizenshipFront, setCitizenshipFront] = useState<UploadedFile | null>(null);
+  const [citizenshipSelfie, setCitizenshipSelfie] = useState<UploadedFile | null>(null);
+  const [companyRegistration, setCompanyRegistration] = useState<UploadedFile | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const cfg = KYC_STATUS_CFG[status];
-  const StatusIcon = cfg.icon;
-  const canSubmit = status === "not-submitted" || status === "rejected";
+  const canSubmit = status === "not-verified" || status === "rejected";
+  const canSubmitDocuments =
+    legalName.trim() !== "" &&
+    phone.trim() !== "" &&
+    citizenshipFront !== null &&
+    citizenshipSelfie !== null;
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!legalName.trim()) e.legalName = "Full legal name is required.";
     if (!phone.trim()) e.phone = "Phone number is required.";
+    if (!citizenshipFront) e.citizenshipFront = "Citizenship front photo is required.";
+    if (!citizenshipSelfie) e.citizenshipSelfie = "Citizenship selfie is required.";
     return e;
   };
 
@@ -529,155 +425,119 @@ function KycSection({ onStatusChange }: { onStatusChange?: (s: KycStatus) => voi
           KYC Verification
         </h2>
         <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.78rem" }}>
-          Verify your identity through Admin approval to build trust on the platform.
+          Verify your identity through admin approval to build trust on the platform.
         </p>
       </div>
 
-      {/* Status card */}
-      <div className="flex items-start gap-4 bg-white border border-slate-200 rounded-2xl p-4">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: cfg.iconBg }}
-        >
-          <StatusIcon className="w-5 h-5" style={{ color: cfg.iconColor }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-slate-900 font-semibold" style={{ fontSize: "0.875rem" }}>
-              Verification Status
-            </p>
-            <StatusBadge
-              config={{
-                label: cfg.label,
-                color: cfg.badgeColor,
-                bg: cfg.badgeBg,
-                border: cfg.badgeBorder,
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border font-semibold"
-            />
-          </div>
-          <p className="text-slate-500 mt-0.5" style={{ fontSize: "0.75rem" }}>
-            {cfg.desc}
-          </p>
-        </div>
-      </div>
+      <VerificationStatusCard status={status} />
 
-      {/* Demo status switcher (for preview) */}
-      <div className="flex gap-2 flex-wrap">
-        <p className="text-slate-400 self-center" style={{ fontSize: "0.68rem" }}>
-          Preview status:
-        </p>
-        {(Object.keys(KYC_STATUS_CFG) as KycStatus[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => updateStatus(s)}
-            className={`px-2.5 py-1 rounded-lg border font-semibold transition-all ${status === s ? "bg-blue-50 text-blue-600 border-blue-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}
-            style={{ fontSize: "0.62rem" }}
-          >
-            {KYC_STATUS_CFG[s].label}
-          </button>
-        ))}
-      </div>
-
-      {/* Verification form — shown when not submitted or rejected */}
-      {canSubmit && (
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4 pt-2 border-t border-black/[0.05]"
-        >
-          <p className="text-slate-900 font-semibold" style={{ fontSize: "0.875rem" }}>
-            Verification Documents
-          </p>
-          <p className="text-slate-400" style={{ fontSize: "0.72rem" }}>
-            Documents are visible only to Admin and are kept confidential.
-          </p>
-
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel text="Full Legal Name" required />
-            <input
-              value={legalName}
-              onChange={(e) => setLegalName(e.target.value)}
-              placeholder="Enter your full legal name"
-              className={inputCls}
-              style={{ fontSize: "0.875rem" }}
-            />
-            <ErrorMsg msg={errors.legalName ?? ""} />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel text="Phone Number" required />
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="98XXXXXXXX"
-              className={inputCls}
-              style={{ fontSize: "0.875rem" }}
-            />
-            <ErrorMsg msg={errors.phone ?? ""} />
-          </div>
-
-          <FileUploadRow
-            label="Citizenship Front Photo"
-            accept="image/png,image/jpg,image/jpeg"
-            required
-          />
-          <FileUploadRow
-            label="Selfie Holding Citizenship"
-            accept="image/png,image/jpg,image/jpeg"
-            required
-          />
-
-          <div className="flex flex-col gap-1.5">
-            <FieldLabel text="Company Name" />
-            <input
-              value={companyKyc}
-              onChange={(e) => setCompanyKyc(e.target.value)}
-              placeholder="Company name (optional)"
-              className={inputCls}
-              style={{ fontSize: "0.875rem" }}
-            />
-          </div>
-
-          <FileUploadRow
-            label="Company Registration Document"
-            accept=".pdf,image/png,image/jpg,image/jpeg"
-          />
-
-          {Object.keys(errors).length > 0 && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-              <p className="text-red-600" style={{ fontSize: "0.78rem" }}>
-                Please complete all required fields.
-              </p>
+      {canSubmit ? (
+        <VerificationDocumentsSection>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel text="Legal Name" required />
+              <input
+                value={legalName}
+                onChange={(e) => setLegalName(e.target.value)}
+                placeholder="Enter your full legal name"
+                className={inputCls}
+                style={{ fontSize: "0.875rem" }}
+              />
+              <ErrorMsg msg={errors.legalName ?? ""} />
             </div>
-          )}
 
-          <div className="pt-1 border-t border-black/[0.05]">
-            <SaveButton saving={submitting} saved={false} label="Submit Verification" />
-          </div>
-        </form>
-      )}
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel text="Phone Number" required />
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="98XXXXXXXX"
+                className={inputCls}
+                style={{ fontSize: "0.875rem" }}
+              />
+              <ErrorMsg msg={errors.phone ?? ""} />
+            </div>
 
-      {status === "pending" && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-          <Clock className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-amber-600" style={{ fontSize: "0.78rem" }}>
-            Your verification documents are under review. The Admin team typically responds within
-            1–2 business days.
-          </p>
-        </div>
-      )}
+            <FileUpload
+              label="Citizenship Front"
+              hint="Upload a clear photo of the front side of your citizenship document."
+              file={citizenshipFront}
+              onFile={setCitizenshipFront}
+              onRemove={() => setCitizenshipFront(null)}
+            />
+            <ErrorMsg msg={errors.citizenshipFront ?? ""} />
 
-      {status === "verified" && (
-        <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-3">
-          <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-          <p className="text-emerald-600" style={{ fontSize: "0.78rem" }}>
-            Your account is verified. A <strong>✓ Verified Client</strong> badge is now visible on
-            your profile and job listings.
-          </p>
-        </div>
+            <FileUpload
+              label="Citizenship Selfie"
+              hint="Take a selfie clearly showing your face alongside your citizenship document."
+              file={citizenshipSelfie}
+              onFile={setCitizenshipSelfie}
+              onRemove={() => setCitizenshipSelfie(null)}
+            />
+            <ErrorMsg msg={errors.citizenshipSelfie ?? ""} />
+
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel text="Company Name" />
+              <input
+                value={companyKyc}
+                onChange={(e) => setCompanyKyc(e.target.value)}
+                placeholder="Company name (optional)"
+                className={inputCls}
+                style={{ fontSize: "0.875rem" }}
+              />
+            </div>
+
+            <FileUpload
+              label="Company Registration Document (if required)"
+              hint="Upload your company registration document if you are posting as a company."
+              file={companyRegistration}
+              onFile={setCompanyRegistration}
+              onRemove={() => setCompanyRegistration(null)}
+              required={false}
+            />
+
+            {Object.keys(errors).length > 0 && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                <p className="text-red-600" style={{ fontSize: "0.78rem" }}>
+                  Please complete all required fields.
+                </p>
+              </div>
+            )}
+
+            <div className="pt-1 border-t border-black/[0.05]">
+              <button
+                type="submit"
+                disabled={!canSubmitDocuments || submitting}
+                className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-all ${
+                  canSubmitDocuments && !submitting
+                    ? "bg-blue-600 text-white shadow-md hover:bg-blue-700"
+                    : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                }`}
+                style={{ fontSize: "0.9rem" }}
+              >
+                {submitting ? (
+                  <>
+                    <motion.span
+                      className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                    />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    Submit Verification
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </VerificationDocumentsSection>
+      ) : (
+        <VerificationHelpMessage status={status} />
       )}
     </div>
   );
@@ -752,7 +612,9 @@ export default function ClientSettingsPage() {
   const [active, setActive] = useState<Section>("profile");
   const [notification, setNotification] = useState<NotificationMessage>(null);
   // Shared KYC status — drives the top-level reminder card visibility
-  const [kycStatus, setKycStatus] = useState<KycStatus>("not-submitted");
+  const [kycStatus, setKycStatus] = useState<VerificationDisplayStatus>(
+    getVerificationDisplayStatus(null)
+  );
 
   const CONTENT: Record<Section, React.ReactNode> = {
     profile: <ProfileSection onNotify={setNotification} />,

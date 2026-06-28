@@ -5,7 +5,6 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ShieldCheck,
-  Lock,
   Upload,
   X,
   FileText as FilePdf,
@@ -14,7 +13,6 @@ import {
   Clock,
   RefreshCw,
 } from "lucide-react";
-import { useDashboardCurrentUser } from "@/app/components/layout/DashboardLayout";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -40,9 +38,17 @@ interface FileUploadProps {
   file: UploadedFile | null;
   onFile: (f: UploadedFile) => void;
   onRemove: () => void;
+  required?: boolean;
 }
 
-function FileUpload({ label, hint, file, onFile, onRemove }: FileUploadProps) {
+export function FileUpload({
+  label,
+  hint,
+  file,
+  onFile,
+  onRemove,
+  required = true,
+}: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -72,9 +78,11 @@ function FileUpload({ label, hint, file, onFile, onRemove }: FileUploadProps) {
         <label className="text-slate-900 font-semibold" style={{ fontSize: "0.82rem" }}>
           {label}
         </label>
-        <span className="text-red-400" style={{ fontSize: "0.75rem" }}>
-          *
-        </span>
+        {required && (
+          <span className="text-red-400" style={{ fontSize: "0.75rem" }}>
+            *
+          </span>
+        )}
       </div>
       <p className="text-slate-400" style={{ fontSize: "0.72rem" }}>
         {hint}
@@ -260,7 +268,7 @@ function SubmittedState({ onBack }: { onBack?: () => void }) {
       <div className="mt-5 flex items-center gap-2 bg-amber-50 border border-amber-200 px-4 py-2.5 rounded-xl">
         <Clock className="w-4 h-4 text-amber-600 shrink-0" />
         <span className="text-amber-600 font-semibold" style={{ fontSize: "0.8rem" }}>
-          Status: Pending Review
+          Status: Pending
         </span>
       </div>
       {onBack && (
@@ -284,7 +292,6 @@ interface VerificationFormProps {
 }
 
 export function VerificationForm({ onSubmitted }: VerificationFormProps) {
-  const currentUser = useDashboardCurrentUser();
   const [university, setUniversity] = useState("");
   const [studentId, setStudentId] = useState("");
   const [idCard, setIdCard] = useState<UploadedFile | null>(null);
@@ -326,39 +333,11 @@ export function VerificationForm({ onSubmitted }: VerificationFormProps) {
             exit={{ opacity: 0 }}
             className="flex flex-col gap-6"
           >
-            {/* Status */}
-            <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-full w-fit">
-              <span className="w-2 h-2 rounded-full bg-slate-400" />
-              <span className="text-slate-500 font-semibold" style={{ fontSize: "0.72rem" }}>
-                Not Submitted
-              </span>
-            </div>
-
-            {/* College email (read-only) */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2">
-                <label className="text-slate-900 font-semibold" style={{ fontSize: "0.82rem" }}>
-                  College Email
-                </label>
-                <Lock className="w-3 h-3 text-slate-300" />
-                <span className="text-slate-400" style={{ fontSize: "0.68rem" }}>
-                  Read only
-                </span>
-              </div>
-              <input
-                type="email"
-                value={currentUser?.email ?? ""}
-                readOnly
-                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-slate-500 outline-none cursor-default"
-                style={{ fontSize: "0.875rem" }}
-              />
-            </div>
-
-            {/* University */}
+            {/* College name */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
                 <label className="text-slate-900 font-semibold" style={{ fontSize: "0.82rem" }}>
-                  University / College Name
+                  College Name
                 </label>
                 <span className="text-red-400" style={{ fontSize: "0.75rem" }}>
                   *
@@ -366,7 +345,7 @@ export function VerificationForm({ onSubmitted }: VerificationFormProps) {
               </div>
               <input
                 type="text"
-                placeholder="Enter your university or college name"
+                placeholder="Enter your college name"
                 value={university}
                 onChange={(e) => setUniversity(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
@@ -378,7 +357,7 @@ export function VerificationForm({ onSubmitted }: VerificationFormProps) {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
                 <label className="text-slate-900 font-semibold" style={{ fontSize: "0.82rem" }}>
-                  Student ID Number
+                  Student ID
                 </label>
                 <span className="text-red-400" style={{ fontSize: "0.75rem" }}>
                   *
@@ -405,7 +384,7 @@ export function VerificationForm({ onSubmitted }: VerificationFormProps) {
             />
 
             <FileUpload
-              label="Selfie Holding Student ID Card"
+              label="Student Selfie"
               hint="Take a selfie clearly showing your face alongside your student ID card."
               file={selfie}
               onFile={setSelfie}
