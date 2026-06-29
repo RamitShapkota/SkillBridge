@@ -140,7 +140,7 @@ export default function AdminDashboard() {
       onClick: () => navigate("/admin/users"),
     },
     {
-      value: 4,
+      value: 1,
       label: "Active Projects",
       icon: CheckCircle,
       color: "#059669",

@@ -55,43 +55,6 @@ const JOBS: AdminJob[] = [
     skills: ["Figma", "UI Design", "Prototyping"],
   },
   {
-    id: "j2",
-    title: "React Portfolio Website",
-    clientName: "Dikshya Khanal",
-    clientInitials: "DK",
-    category: "Web Development",
-    budget: "NPR 6,500",
-    duration: "5d",
-    deadline: "2026-06-28",
-    complexity: "small",
-    status: "open",
-    postedAt: "10 Jun 2026",
-    applications: 2,
-    description: "Build a personal portfolio website using React and TailwindCSS.",
-    requirements:
-      "Implement pixel-perfect from Figma. Animations must be subtle. Include contact form. Deploy to Vercel.",
-    skills: ["React", "TailwindCSS", "JavaScript"],
-  },
-  {
-    id: "j3",
-    title: "Investor Pitch Deck",
-    clientName: "Sneha Rao",
-    clientInitials: "SR",
-    category: "Presentation Design",
-    budget: "NPR 4,500",
-    duration: "3d",
-    deadline: "2026-06-25",
-    complexity: "small",
-    status: "open",
-    postedAt: "5 Jun 2026",
-    applications: 1,
-    description:
-      "Design a professional 15-slide investor pitch deck for a startup's funding round.",
-    requirements:
-      "Minimal design. Slides: Problem, Solution, Market, Business Model, Traction, Team, Ask. Deliver as PPTX and PDF.",
-    skills: ["Canva", "MS PowerPoint"],
-  },
-  {
     id: "j4",
     title: "Social Media Design Kit",
     clientName: "Dikshya Khanal",
@@ -109,24 +72,6 @@ const JOBS: AdminJob[] = [
     requirements:
       "Templates for announcements, quotes, product features. All editable in Canva. Export as PNG + Canva share links.",
     skills: ["Canva", "Graphic Design"],
-  },
-  {
-    id: "j5",
-    title: "E-commerce Product Page",
-    clientName: "Vikram Nair",
-    clientInitials: "VN",
-    category: "UI/UX Design",
-    budget: "NPR 5,500",
-    duration: "7d",
-    deadline: "2026-07-05",
-    complexity: "medium",
-    status: "open",
-    postedAt: "8 Jun 2026",
-    applications: 3,
-    description: "Design a clean product page for an e-commerce platform selling electronics.",
-    requirements:
-      "Product images and text will be provided. Deliver high-fidelity Figma mockups with hover states.",
-    skills: ["Figma", "UI Design"],
   },
 ];
 

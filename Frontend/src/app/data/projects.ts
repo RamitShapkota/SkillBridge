@@ -69,22 +69,6 @@ export const PROJECTS: Project[] = [
     skills: ["React", "TailwindCSS", "JavaScript", "Vercel"],
   },
   {
-    id: "p3",
-    title: "Investor Pitch Deck",
-    status: "active",
-    category: "Presentation Design",
-    student: { name: "Manisha Poudel", initials: "MP" },
-    client: { name: "Dikshya Khanal", initials: "AC" },
-    startDate: "5 Jun 2026",
-    deadline: "20 Jun 2026",
-    budget: "4,500",
-    description:
-      "Design a professional 15-slide investor pitch deck for our startup's funding round. Content will be provided. Focus on clean, impactful design.",
-    requirements:
-      "Professional minimal design. Slides: Problem, Solution, Market Size, Business Model, Traction, Team, and Ask. Deliver as editable PPTX and PDF.",
-    skills: ["Canva", "MS PowerPoint", "Presentation Design"],
-  },
-  {
     id: "p4",
     title: "Social Media Design Kit",
     status: "completed",

@@ -95,7 +95,6 @@ import {
 } from "../../app/components/layout/DashboardLayout";
 import { StudentProfileView } from "../../app/components/shared/StudentProfileView";
 import { getProfile, setProfile, subscribeProfile } from "../../app/data/profileStore";
-import { PROJECTS } from "../../app/data/projects";
 import { getStudentProfile } from "../../services/studentProfileService";
 
 const DEFAULT_RATING = 0;
@@ -155,8 +154,6 @@ function StudentProfileContent() {
     verified: false,
   }));
 
-  const completedProjectsCount = PROJECTS.filter((pr) => pr.status === "completed").length;
-
   return (
     <>
       <motion.div
@@ -189,7 +186,7 @@ function StudentProfileContent() {
             skills,
             rating: DEFAULT_RATING,
             reviewCount: DEFAULT_REVIEW_COUNT,
-            completedProjectsCount,
+            completedProjectsCount: 0,
             github: p.github || undefined,
             linkedin: p.linkedin || undefined,
             portfolio: p.portfolio || undefined,

@@ -119,48 +119,6 @@ const DUMMY_APPS: Application[] = [
     },
   },
   {
-    id: "a3",
-    jobTitle: "Design a Pitch Deck for Investor Presentation",
-    category: "Presentation Design",
-    status: "pending",
-    appliedAt: "6 Jun 2026",
-    estimatedTime: "3 Days",
-    budget: "4,500",
-    coverSnippet:
-      "I have created over 15 investor pitch decks for startups across various industries...",
-    coverMessage:
-      "I have created over 15 investor pitch decks for startups across various industries including fintech, healthtech, and edtech. I understand what investors look for and how to structure a compelling narrative with strong visuals.",
-    whySuitable:
-      "I have a background in both business communication and graphic design. My pitch decks have helped clients secure funding ranging from seed rounds to Series A. I deliver in PowerPoint, Keynote, and Google Slides.",
-    job: {
-      title: "Design a Pitch Deck for Investor Presentation",
-      category: "presentation",
-      description:
-        "We need a professional 12-15 slide pitch deck for an upcoming investor meeting. The deck should tell our startup story, showcase the market opportunity, and present our financial projections clearly.",
-      requirements:
-        "Experience with startup pitch decks required. Must understand storytelling structure. Deliver in Google Slides and PDF.",
-      skills: [
-        "Presentation Design",
-        "Pitch Deck",
-        "Storytelling",
-        "Google Slides",
-        "Data Visualization",
-      ],
-      budget: "4,500",
-      duration: "3d",
-      deadline: "2026-06-25",
-      complexity: "small",
-      postedAt: "4 Jun 2026",
-      clientName: "Vikram Nair",
-      clientInitials: "VN",
-      clientLocation: "Pokhara, Nepal",
-      clientAbout: "Co-founder of a B2B SaaS startup preparing for our seed round.",
-      clientJobsPosted: 3,
-      clientProjectsCompleted: 2,
-      clientJoinedDate: "Apr 2026",
-    },
-  },
-  {
     id: "a4",
     jobTitle: "Create Social Media Post Templates",
     category: "Graphic Design",

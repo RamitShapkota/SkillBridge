@@ -15,10 +15,10 @@ import { SectionCard } from "../../app/components/shared/SectionCard";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 
 const clientStats = [
-  { value: 8, label: "Jobs Posted", icon: Briefcase, color: "#2563EB", bg: "#EFF6FF" },
-  { value: 3, label: "Open Jobs", icon: FolderOpen, color: "#14B8A6", bg: "#F0FDFA" },
-  { value: 24, label: "Applications Received", icon: FileText, color: "#F59E0B", bg: "#FFFBEB" },
-  { value: 3, label: "Active Projects", icon: CheckCircle, color: "#7C3AED", bg: "#F5F3FF" },
+  { value: 2, label: "Jobs Posted", icon: Briefcase, color: "#2563EB", bg: "#EFF6FF" },
+  { value: 1, label: "Open Jobs", icon: FolderOpen, color: "#14B8A6", bg: "#F0FDFA" },
+  { value: 1, label: "Applications Received", icon: FileText, color: "#F59E0B", bg: "#FFFBEB" },
+  { value: 1, label: "Active Projects", icon: CheckCircle, color: "#7C3AED", bg: "#F5F3FF" },
 ];
 
 const PENDING_ACTIONS = [
@@ -28,13 +28,6 @@ const PENDING_ACTIONS = [
     path: "/dashboard/client/manage-jobs",
     color: "#2563EB",
     bg: "#EFF6FF",
-  },
-  {
-    title: "1 Submission Waiting",
-    desc: "Priya Sharma submitted work on EdTech Landing Page.",
-    path: "/dashboard/client/projects",
-    color: "#7C3AED",
-    bg: "#F5F3FF",
   },
 ];
 
@@ -46,14 +39,6 @@ const RECENT_JOBS = [
     statusColor: "#059669",
     statusBg: "#ECFDF5",
     posted: "2 days ago",
-  },
-  {
-    title: "React Portfolio Site",
-    apps: 2,
-    status: "Open",
-    statusColor: "#059669",
-    statusBg: "#ECFDF5",
-    posted: "4 days ago",
   },
   {
     title: "Social Media Kit",

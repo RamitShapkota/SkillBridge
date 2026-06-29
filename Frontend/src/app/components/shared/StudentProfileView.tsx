@@ -349,22 +349,6 @@ const FALLBACK_REVIEWS = [
     comment: "Excellent communication and delivered before deadline. The quality was outstanding.",
     submittedAt: "12 Jun 2026",
   },
-  {
-    id: "fr2",
-    clientName: "Sneha Rao",
-    clientInitials: "SR",
-    rating: 5,
-    comment: "Highly recommended and professional. Will definitely work together again.",
-    submittedAt: "8 Jun 2026",
-  },
-  {
-    id: "fr3",
-    clientName: "Vikram Nair",
-    clientInitials: "VN",
-    rating: 4,
-    comment: "Great work overall. Delivered clean results with good attention to detail.",
-    submittedAt: "29 May 2026",
-  },
 ];
 
 function Reviews() {
@@ -417,7 +401,7 @@ function Reviews() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {reviews.slice(0, 4).map((r) => (
+          {reviews.slice(0, 1).map((r) => (
             <motion.div
               key={r.id}
               whileHover={{ y: -2, boxShadow: "0 6px 20px rgba(0,0,0,0.07)" }}

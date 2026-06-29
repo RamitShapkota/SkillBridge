@@ -11,9 +11,9 @@ import { PROJECTS } from "../../app/data/projects";
 const IS_VERIFIED = false;
 
 const studentStats = [
-  { value: 12, label: "Total Applications", icon: FileText, color: "#2563EB", bg: "#EFF6FF" },
+  { value: 2, label: "Total Applications", icon: FileText, color: "#2563EB", bg: "#EFF6FF" },
   { value: 2, label: "Active Projects", icon: Folder, color: "#14B8A6", bg: "#F0FDFA" },
-  { value: 5, label: "Completed Projects", icon: CheckCircle, color: "#059669", bg: "#ECFDF5" },
+  { value: 1, label: "Completed Projects", icon: CheckCircle, color: "#059669", bg: "#ECFDF5" },
 ];
 
 const RECENT_APPS = [
@@ -30,13 +30,6 @@ const RECENT_APPS = [
     statusColor: "#059669",
     statusBg: "#ECFDF5",
     applied: "8 Jun 2026",
-  },
-  {
-    title: "Investor Pitch Deck",
-    status: "Pending",
-    statusColor: "#D97706",
-    statusBg: "#FFFBEB",
-    applied: "6 Jun 2026",
   },
 ];
 
