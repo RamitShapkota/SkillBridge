@@ -16,7 +16,7 @@ export const authorizeRoles = (...allowedRoles) => {
         `Access denied. ${req.user.role} is not allowed to access this route`
       );
     }
-
+     
     next();
   });
 };
