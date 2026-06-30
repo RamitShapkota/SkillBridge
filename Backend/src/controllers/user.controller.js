@@ -318,7 +318,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
 
 
-//this two sendVerificationOtp and verifyEmail for verify user email
+//this two sendVerificationOtp and verifyEmail for verify user email(register)
 const sendVerificationOtp = asyncHandler(async (req, res) => {
   let { fullName, email, password, confirmPassword, role } = req.body;
 
