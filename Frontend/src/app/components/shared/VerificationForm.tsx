@@ -14,7 +14,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types 
 
 export interface UploadedFile {
   name: string;
@@ -23,14 +23,14 @@ export interface UploadedFile {
   preview: string | null;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers 
 
 function formatSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// ── File upload component ─────────────────────────────────────────────────────
+//File upload component 
 
 interface FileUploadProps {
   label: string;
