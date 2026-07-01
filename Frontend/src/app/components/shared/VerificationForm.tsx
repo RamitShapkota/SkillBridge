@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import {
   submitStudentVerification,
+  updateStudentVerification,
   type VerificationData,
 } from "../../../services/verificationService";
 import {
@@ -365,10 +366,51 @@ export function VerificationForm({
     studentId.trim() !== "" &&
     idCard !== null &&
     selfie !== null;
+  const canUpdate = !disabled && university.trim() !== "" && studentId.trim() !== "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === "update" || !canSubmit || submitting || !idCard || !selfie) return;
+
+    if (mode === "update") {
+      if (!canUpdate || submitting) return;
+
+      setSubmitting(true);
+
+      const formData = new FormData();
+      formData.append("university", university);
+      formData.append("studentId", studentId);
+
+      if (idCard) {
+        formData.append("idCard", idCard.file);
+      }
+
+      if (selfie) {
+        formData.append("selfie", selfie.file);
+      }
+
+      try {
+        const response = await updateStudentVerification(formData);
+        const status = response.data.status;
+
+        setSubmittedStatus(status);
+        setSubmitted(true);
+        onSubmitted?.(response.data);
+        onNotify?.({
+          type: "success",
+          text: "Verification updated successfully. Your verification has been resubmitted for review.",
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Verification request could not be updated.";
+        onNotify?.({ type: "error", text: message });
+      } finally {
+        setSubmitting(false);
+      }
+
+      return;
+    }
+
+    if (!canSubmit || submitting || !idCard || !selfie) return;
     setSubmitting(true);
 
     const formData = new FormData();
@@ -432,7 +474,7 @@ export function VerificationForm({
                 placeholder="Enter your college name"
                 value={university}
                 onChange={(e) => setUniversity(e.target.value)}
-                disabled={disabled}
+                disabled={disabled || submitting}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                 style={{ fontSize: "0.875rem" }}
               />
@@ -453,7 +495,7 @@ export function VerificationForm({
                 placeholder="Enter your student ID number"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                disabled={disabled}
+                disabled={disabled || submitting}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                 style={{ fontSize: "0.875rem" }}
               />
@@ -479,7 +521,7 @@ export function VerificationForm({
               disabled={disabled || submitting}
             />
 
-            {!canSubmit && (university || studentId || idCard || selfie) && (
+            {mode === "submit" && !canSubmit && (university || studentId || idCard || selfie) && (
               <div className="flex items-start gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
                 <AlertCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                 <p className="text-slate-400 leading-relaxed" style={{ fontSize: "0.78rem" }}>
@@ -489,10 +531,10 @@ export function VerificationForm({
             )}
 
             <button
-              type={mode === "update" ? "button" : "submit"}
-              disabled={mode === "update" ? disabled || submitting : !canSubmit || submitting}
+              type="submit"
+              disabled={mode === "update" ? !canUpdate || submitting : !canSubmit || submitting}
               className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-all ${
-                ((mode === "update" && !disabled) || canSubmit) && !submitting
+                ((mode === "update" ? canUpdate : canSubmit) && !submitting)
                   ? "bg-blue-600 text-white shadow-md hover:bg-blue-700"
                   : "bg-slate-100 text-slate-300 cursor-not-allowed"
               }`}

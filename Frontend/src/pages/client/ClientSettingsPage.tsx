@@ -34,6 +34,7 @@ import {
 import {
   getVerificationStatus,
   submitClientVerification,
+  updateClientVerification,
   type VerificationData,
 } from "../../services/verificationService";
 import { User, ShieldCheck, Lock, Check, Upload, Trash2, AlertCircle } from "lucide-react";
@@ -410,6 +411,7 @@ function KycSection({
     phone.trim() !== "" &&
     citizenshipFront !== null &&
     citizenshipSelfie !== null;
+  const canUpdateDocuments = legalName.trim() !== "" && phone.trim() !== "";
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -474,7 +476,57 @@ function KycSection({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (status === "rejected") return;
+
+    if (status === "rejected") {
+      const errs: Record<string, string> = {};
+      if (!legalName.trim()) errs.legalName = "Full legal name is required.";
+      if (!phone.trim()) errs.phone = "Phone number is required.";
+
+      setErrors(errs);
+      if (Object.keys(errs).length > 0 || submitting) return;
+
+      setSubmitting(true);
+
+      const formData = new FormData();
+      formData.append("legalName", legalName);
+      formData.append("phone", phone);
+      formData.append("companyKyc", companyKyc);
+
+      if (citizenshipFront) {
+        formData.append("citizenshipFront", citizenshipFront.file);
+      }
+
+      if (citizenshipSelfie) {
+        formData.append("citizenshipSelfie", citizenshipSelfie.file);
+      }
+
+      if (companyRegistration) {
+        formData.append("companyRegistration", companyRegistration.file);
+      }
+
+      try {
+        const response = await updateClientVerification(formData);
+        const status = response.data.status;
+
+        setSubmitted(true);
+        setSubmittedStatus(status);
+        setVerification(response.data);
+        onStatusChange?.(getVerificationDisplayStatus(status));
+        await reloadVerificationStatus();
+        onNotify({
+          type: "success",
+          text: "Verification updated successfully. Your verification has been resubmitted for review.",
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Verification request could not be updated.";
+        onNotify({ type: "error", text: message });
+      } finally {
+        setSubmitting(false);
+      }
+
+      return;
+    }
 
     const errs = validate();
     setErrors(errs);
@@ -503,7 +555,7 @@ function KycSection({
       setSubmittedStatus(status);
       setVerification(response.data);
       onStatusChange?.(getVerificationDisplayStatus(status));
-      reloadVerificationStatus();
+      await reloadVerificationStatus();
       onNotify({
         type: "success",
         text: "Verification submitted successfully. Your documents have been submitted for review.",
@@ -552,6 +604,7 @@ function KycSection({
                 value={legalName}
                 onChange={(e) => setLegalName(e.target.value)}
                 placeholder="Enter your full legal name"
+                disabled={submitting}
                 className={inputCls}
                 style={{ fontSize: "0.875rem" }}
               />
@@ -565,6 +618,7 @@ function KycSection({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="98XXXXXXXX"
+                disabled={submitting}
                 className={inputCls}
                 style={{ fontSize: "0.875rem" }}
               />
@@ -597,6 +651,7 @@ function KycSection({
                 value={companyKyc}
                 onChange={(e) => setCompanyKyc(e.target.value)}
                 placeholder="Company name (optional)"
+                disabled={submitting}
                 className={inputCls}
                 style={{ fontSize: "0.875rem" }}
               />
@@ -623,10 +678,15 @@ function KycSection({
 
             <div className="pt-1 border-t border-black/[0.05]">
               <button
-                type={status === "rejected" ? "button" : "submit"}
-                disabled={status === "rejected" ? submitting : !canSubmitDocuments || submitting}
+                type="submit"
+                disabled={
+                  status === "rejected"
+                    ? !canUpdateDocuments || submitting
+                    : !canSubmitDocuments || submitting
+                }
                 className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-all ${
-                  ((status === "rejected" || canSubmitDocuments) && !submitting)
+                  ((status === "rejected" ? canUpdateDocuments : canSubmitDocuments) &&
+                    !submitting)
                     ? "bg-blue-600 text-white shadow-md hover:bg-blue-700"
                     : "bg-slate-100 text-slate-300 cursor-not-allowed"
                 }`}
