@@ -6,6 +6,7 @@ import userRouter from "./routes/user.routes.js";
 import jobRouter from "./routes/job.routes.js";
 import studentRouter from "./routes/student.routes.js";
 import clientRouter from "./routes/client.routes.js";
+import verificationRouter from "./routes/verification.routes.js";
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/jobs", jobRouter);
 app.use("/api/v1/student", studentRouter);
 app.use("/api/v1/client", clientRouter);
+app.use("/api/v1/verification", verificationRouter);
 
 app.use(globalErrorHandler);
 
