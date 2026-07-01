@@ -111,6 +111,21 @@ const createJob = asyncHandler(async (req, res) => {
 });
 
 const getClientJobs = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  if (req.user.role !== "client") {
+    throw new ApiError(403, "Only clients can view their jobs");
+  }
+
+  const jobs = await Job.find({
+    client: req.user._id,
+  }).sort({ createdAt: -1 });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, jobs, "Client jobs fetched successfully"));
 });
 
 const getAllOpenJobs = asyncHandler(async (req, res) => {
