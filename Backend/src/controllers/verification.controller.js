@@ -82,6 +82,8 @@ const submitStudentVerification = asyncHandler(async (req, res) => {
     );
 });
 
+
+
 const submitClientVerification = asyncHandler(async (req, res) => {
   const { legalName, phone } = req.body || {};
 
@@ -182,6 +184,8 @@ const submitClientVerification = asyncHandler(async (req, res) => {
     );
 });
 
+
+
 const getVerificationStatus = asyncHandler(async (req, res) => {
   if (!req.user) {
     throw new ApiError(401, "User not authenticated");
@@ -203,6 +207,8 @@ const getVerificationStatus = asyncHandler(async (req, res) => {
       new ApiResponse(200, verification, "Verification fetched successfully")
     );
 });
+
+
 
 const updateStudentVerification = asyncHandler(async (req, res) => {
   const { university, studentId } = req.body || {};
@@ -290,6 +296,8 @@ const updateStudentVerification = asyncHandler(async (req, res) => {
       )
     );
 });
+
+
 
 const updateClientVerification = asyncHandler(async (req, res) => {
   const { legalName, phone } = req.body || {};
@@ -398,6 +406,8 @@ const updateClientVerification = asyncHandler(async (req, res) => {
 
 const updateVerification = asyncHandler(async (req, res) => {
 });
+
+
 
 export {
   submitStudentVerification,
