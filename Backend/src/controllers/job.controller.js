@@ -129,6 +129,23 @@ const getClientJobs = asyncHandler(async (req, res) => {
 });
 
 const getAllOpenJobs = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  if (req.user.role !== "student") {
+    throw new ApiError(403, "Only students can browse open jobs");
+  }
+
+  const jobs = await Job.find({
+    status: "open",
+  })
+    .populate("client", "fullName avatar")
+    .sort({ createdAt: -1 });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, jobs, "Open jobs fetched successfully"));
 });
 
 const getJobById = asyncHandler(async (req, res) => {
