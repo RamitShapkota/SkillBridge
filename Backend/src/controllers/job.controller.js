@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Job } from "../models/job.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -149,6 +150,25 @@ const getAllOpenJobs = asyncHandler(async (req, res) => {
 });
 
 const getJobById = asyncHandler(async (req, res) => {
+  const { jobId } = req.params;
+
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  if (!mongoose.isValidObjectId(jobId)) {
+    throw new ApiError(400, "Invalid job id");
+  }
+
+  const job = await Job.findById(jobId).populate("client", "fullName avatar");
+
+  if (!job) {
+    throw new ApiError(404, "Job not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, job, "Job fetched successfully"));
 });
 
 const updateJob = asyncHandler(async (req, res) => {
