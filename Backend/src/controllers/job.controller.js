@@ -6,6 +6,17 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
+const VALID_JOB_CATEGORIES = [
+  "web-dev",
+  "ui-ux",
+  "graphic",
+  "documentation",
+  "presentation",
+  "other",
+];
+
+const VALID_JOB_DURATIONS = ["1d", "3d", "5d", "7d", "14d"];
+
 const createJob = asyncHandler(async (req, res) => {
   const {
     title,
@@ -36,6 +47,10 @@ const createJob = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Category is required");
   }
 
+  if (!VALID_JOB_CATEGORIES.includes(category.trim())) {
+    throw new ApiError(400, "Category must be a valid job category");
+  }
+
   if (!description?.trim() || description.trim().length < 20) {
     throw new ApiError(400, "Description must be at least 20 characters");
   }
@@ -58,6 +73,10 @@ const createJob = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Duration is required");
   }
 
+  if (!VALID_JOB_DURATIONS.includes(duration.trim())) {
+    throw new ApiError(400, "Duration must be a valid job duration");
+  }
+
   if (!deadline) {
     throw new ApiError(400, "Deadline is required");
   }
@@ -66,6 +85,13 @@ const createJob = asyncHandler(async (req, res) => {
 
   if (Number.isNaN(deadlineDate.getTime())) {
     throw new ApiError(400, "Deadline must be a valid date");
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (deadlineDate < today) {
+    throw new ApiError(400, "Deadline cannot be in the past");
   }
 
   if (!complexity?.trim()) {
@@ -143,7 +169,7 @@ const getAllOpenJobs = asyncHandler(async (req, res) => {
   const jobs = await Job.find({
     status: "open",
   })
-    .populate("client", "fullName avatar")
+    .select("title category budget duration deadline skills status createdAt")
     .sort({ createdAt: -1 });
 
   return res
@@ -162,7 +188,10 @@ const getJobById = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid job id");
   }
 
-  const job = await Job.findById(jobId).populate("client", "fullName avatar");
+  const job = await Job.findById(jobId).populate("client", "fullName avatar createdAt");
+
+  // TODO: Add verified status, client bio, rating, completed project count,
+  // and review stats after Verification, ClientProfile, Project, and Review modules expose them.
 
   if (!job) {
     throw new ApiError(404, "Job not found");
@@ -218,17 +247,18 @@ const updateJob = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cancelled jobs cannot be edited");
   }
 
-  const project = await Project.findOne({ job: job._id });
+  const project = await Project.exists({ job: job._id });
 
   if (project) {
     throw new ApiError(400, "Jobs with an active project cannot be edited");
   }
 
-  const applications = await Application.find({ job: job._id });
-  const hasApplications = applications.length > 0;
-  const hasAcceptedApplication = applications.some(
-    (application) => application.status === "accepted"
-  );
+  const existingApplication = await Application.exists({ job: job._id });
+  const hasApplications = Boolean(existingApplication);
+  const acceptedApplication = hasApplications
+    ? await Application.exists({ job: job._id, status: "accepted" })
+    : null;
+  const hasAcceptedApplication = Boolean(acceptedApplication);
 
   if (hasAcceptedApplication) {
     throw new ApiError(400, "Jobs with accepted applications cannot be edited");
@@ -261,6 +291,13 @@ const updateJob = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Deadline must be a valid date");
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (deadlineDate < today) {
+      throw new ApiError(400, "Deadline cannot be in the past");
+    }
+
     job.deadline = deadlineDate;
   }
 
@@ -268,6 +305,10 @@ const updateJob = asyncHandler(async (req, res) => {
     if (category !== undefined) {
       if (!category?.trim()) {
         throw new ApiError(400, "Category is required");
+      }
+
+      if (!VALID_JOB_CATEGORIES.includes(category.trim())) {
+        throw new ApiError(400, "Category must be a valid job category");
       }
 
       job.category = category.trim();
@@ -306,6 +347,10 @@ const updateJob = asyncHandler(async (req, res) => {
     if (duration !== undefined) {
       if (!duration?.trim()) {
         throw new ApiError(400, "Duration is required");
+      }
+
+      if (!VALID_JOB_DURATIONS.includes(duration.trim())) {
+        throw new ApiError(400, "Duration must be a valid job duration");
       }
 
       job.duration = duration.trim();
@@ -424,7 +469,7 @@ const cancelJob = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Job is already cancelled");
   }
 
-  const project = await Project.findOne({ job: job._id });
+  const project = await Project.exists({ job: job._id });
 
   if (project) {
     throw new ApiError(400, "Jobs with an active project cannot be cancelled");
