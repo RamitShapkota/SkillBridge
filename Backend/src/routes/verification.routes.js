@@ -3,7 +3,8 @@ import {
   getVerificationStatus,
   submitClientVerification,
   submitStudentVerification,
-  updateVerification,
+  updateClientVerification,
+  updateStudentVerification,
 } from "../controllers/verification.controller.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -23,6 +24,15 @@ router
       { name: "selfie", maxCount: 1 },
     ]),
     submitStudentVerification
+  )
+  .patch(
+    verifyJWT,
+    studentRoles,
+    upload.fields([
+      { name: "idCard", maxCount: 1 },
+      { name: "selfie", maxCount: 1 },
+    ]),
+    updateStudentVerification
   );
 
 router
@@ -36,10 +46,18 @@ router
       { name: "companyRegistration", maxCount: 1 },
     ]),
     submitClientVerification
+  )
+  .patch(
+    verifyJWT,
+    clientRoles,
+    upload.fields([
+      { name: "citizenshipFront", maxCount: 1 },
+      { name: "citizenshipSelfie", maxCount: 1 },
+      { name: "companyRegistration", maxCount: 1 },
+    ]),
+    updateClientVerification
   );
 
 router.route("/status").get(verifyJWT, getVerificationStatus);
-
-router.route("/").patch(verifyJWT, updateVerification);
 
 export default router;
