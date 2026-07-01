@@ -5,6 +5,7 @@ import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { JOB_CATEGORIES } from "../../constants/job.constants";
+import { createJob } from "../../services/jobService";
 import {
   Briefcase,
   X,
@@ -509,6 +510,7 @@ export default function PostJobPage() {
     setErrors((p) => {
       const n = { ...p };
       delete n[key];
+      delete n.submit;
       return n;
     });
   };
@@ -540,14 +542,35 @@ export default function PostJobPage() {
     if (validateJobDetails()) setActiveSection("project-settings");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (publishing) return;
     if (!validateProjectSettings()) return;
     setPublishing(true);
-    setTimeout(() => {
-      setPublishing(false);
+
+    if (isEditing) {
+      setTimeout(() => {
+        setPublishing(false);
+        setPublished(true);
+      }, 1400);
+      return;
+    }
+
+    try {
+      await createJob({
+        ...form,
+        skills,
+        files,
+      });
+
       setPublished(true);
-    }, 1400);
+    } catch (error) {
+      setErrors({
+        submit: error instanceof Error ? error.message : "Failed to post job.",
+      });
+    } finally {
+      setPublishing(false);
+    }
   };
 
   // Success state
@@ -792,7 +815,7 @@ export default function PostJobPage() {
               <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                 <p className="text-red-500 leading-relaxed" style={{ fontSize: "0.78rem" }}>
-                  Please fill in all required fields before continuing.
+                  {errors.submit ?? "Please fill in all required fields before continuing."}
                 </p>
               </div>
             )}
@@ -919,7 +942,7 @@ export default function PostJobPage() {
               <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                 <p className="text-red-500 leading-relaxed" style={{ fontSize: "0.78rem" }}>
-                  Please fill in all required fields.
+                  {errors.submit ?? "Please fill in all required fields."}
                 </p>
               </div>
             )}
