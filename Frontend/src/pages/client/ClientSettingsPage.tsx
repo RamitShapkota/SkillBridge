@@ -9,13 +9,18 @@ import { getProfile, setProfile } from "../../app/data/profileStore";
 import { updateAccountDetails, uploadAvatar } from "../../services/authService";
 import { getClientProfile, updateClientProfile } from "../../services/clientProfileService";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
-import { FileUpload, type UploadedFile } from "../../app/components/shared/VerificationForm";
+import {
+  FileUpload,
+  VerificationSubmittedState,
+  type UploadedFile,
+} from "../../app/components/shared/VerificationForm";
 import {
   getVerificationDisplayStatus,
   VerificationDocumentsSection,
   VerificationHelpMessage,
   VerificationStatusCard,
   type VerificationDisplayStatus,
+  type VerificationStatusValue,
 } from "../../app/components/shared/VerificationStatusCard";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
 import {
@@ -23,6 +28,7 @@ import {
   Notification,
   type NotificationMessage,
 } from "../../app/components/shared/ui";
+import { submitClientVerification } from "../../services/verificationService";
 import { User, ShieldCheck, Lock, Check, Upload, Trash2, AlertCircle } from "lucide-react";
 
 // Nav
@@ -371,8 +377,10 @@ function ProfileSection({ onNotify }: { onNotify: (message: NotificationMessage)
 
 function KycSection({
   onStatusChange,
+  onNotify,
 }: {
   onStatusChange?: (s: VerificationDisplayStatus) => void;
+  onNotify: (message: NotificationMessage) => void;
 }) {
   const [status, setStatus] = useState<VerificationDisplayStatus>(
     getVerificationDisplayStatus(null)
@@ -388,6 +396,8 @@ function KycSection({
   const [citizenshipSelfie, setCitizenshipSelfie] = useState<UploadedFile | null>(null);
   const [companyRegistration, setCompanyRegistration] = useState<UploadedFile | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submittedStatus, setSubmittedStatus] = useState<VerificationStatusValue>("pending");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const canSubmit = status === "not-verified" || status === "rejected";
@@ -406,16 +416,45 @@ function KycSection({
     return e;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    if (Object.keys(errs).length > 0 || submitting || !citizenshipFront || !citizenshipSelfie) {
+      return;
+    }
+
     setSubmitting(true);
-    setTimeout(() => {
+
+    const formData = new FormData();
+    formData.append("legalName", legalName);
+    formData.append("phone", phone);
+    formData.append("companyKyc", companyKyc);
+    formData.append("citizenshipFront", citizenshipFront.file);
+    formData.append("citizenshipSelfie", citizenshipSelfie.file);
+
+    if (companyRegistration) {
+      formData.append("companyRegistration", companyRegistration.file);
+    }
+
+    try {
+      const response = await submitClientVerification(formData);
+      const status = response.data.status;
+
+      setSubmitted(true);
+      setSubmittedStatus(status);
+      updateStatus(getVerificationDisplayStatus(status));
+      onNotify({
+        type: "success",
+        text: "Verification submitted successfully. Your documents have been submitted for review.",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Verification request could not be submitted.";
+      onNotify({ type: "error", text: message });
+    } finally {
       setSubmitting(false);
-      updateStatus("pending");
-    }, 1200);
+    }
   };
 
   return (
@@ -431,7 +470,11 @@ function KycSection({
 
       <VerificationStatusCard status={status} />
 
-      {canSubmit ? (
+      {submitted ? (
+        <VerificationDocumentsSection>
+          <VerificationSubmittedState status={submittedStatus} />
+        </VerificationDocumentsSection>
+      ) : canSubmit ? (
         <VerificationDocumentsSection>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -465,6 +508,7 @@ function KycSection({
               file={citizenshipFront}
               onFile={setCitizenshipFront}
               onRemove={() => setCitizenshipFront(null)}
+              disabled={submitting}
             />
             <ErrorMsg msg={errors.citizenshipFront ?? ""} />
 
@@ -474,6 +518,7 @@ function KycSection({
               file={citizenshipSelfie}
               onFile={setCitizenshipSelfie}
               onRemove={() => setCitizenshipSelfie(null)}
+              disabled={submitting}
             />
             <ErrorMsg msg={errors.citizenshipSelfie ?? ""} />
 
@@ -495,6 +540,7 @@ function KycSection({
               onFile={setCompanyRegistration}
               onRemove={() => setCompanyRegistration(null)}
               required={false}
+              disabled={submitting}
             />
 
             {Object.keys(errors).length > 0 && (
@@ -618,7 +664,7 @@ export default function ClientSettingsPage() {
 
   const CONTENT: Record<Section, React.ReactNode> = {
     profile: <ProfileSection onNotify={setNotification} />,
-    kyc: <KycSection onStatusChange={setKycStatus} />,
+    kyc: <KycSection onStatusChange={setKycStatus} onNotify={setNotification} />,
     account: <AccountSection />,
   };
 

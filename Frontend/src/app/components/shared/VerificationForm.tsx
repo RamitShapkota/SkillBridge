@@ -14,6 +14,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { submitStudentVerification } from "../../../services/verificationService";
+import {
+  getVerificationDisplayStatus,
+  VERIFICATION_STATUS_CONFIG,
+  type VerificationStatusValue,
+} from "./VerificationStatusCard";
 import type { NotificationMessage } from "./ui";
 
 // Types 
@@ -42,6 +47,7 @@ interface FileUploadProps {
   onFile: (f: UploadedFile) => void;
   onRemove: () => void;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export function FileUpload({
@@ -51,12 +57,15 @@ export function FileUpload({
   onFile,
   onRemove,
   required = true,
+  disabled = false,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
   const handleRaw = useCallback(
     (raw: File) => {
+      if (disabled) return;
+
       const isImage = raw.type.startsWith("image/");
       onFile({
         file: raw,
@@ -66,11 +75,13 @@ export function FileUpload({
         preview: isImage ? URL.createObjectURL(raw) : null,
       });
     },
-    [onFile]
+    [disabled, onFile]
   );
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    if (disabled) return;
+
     setDragging(false);
     const f = e.dataTransfer.files[0];
     if (f) handleRaw(f);
@@ -96,7 +107,10 @@ export function FileUpload({
         type="file"
         accept="image/jpeg,image/png,application/pdf"
         className="hidden"
+        disabled={disabled}
         onChange={(e) => {
+          if (disabled) return;
+
           const f = e.target.files?.[0];
           if (f) handleRaw(f);
           e.target.value = "";
@@ -112,11 +126,16 @@ export function FileUpload({
             transition={{ duration: 0.2 }}
             onDragOver={(e) => {
               e.preventDefault();
+              if (disabled) return;
+
               setDragging(true);
             }}
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => {
+              if (disabled) return;
+              inputRef.current?.click();
+            }}
             className={`relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed py-10 px-6 cursor-pointer transition-all duration-200 ${
               dragging
                 ? "border-blue-600 bg-blue-50 scale-[1.01]"
@@ -143,6 +162,7 @@ export function FileUpload({
                 style={{ fontSize: "0.82rem" }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (disabled) return;
                   inputRef.current?.click();
                 }}
               >
@@ -225,7 +245,10 @@ export function FileUpload({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => inputRef.current?.click()}
+                  onClick={() => {
+                    if (disabled) return;
+                    inputRef.current?.click();
+                  }}
                   className="inline-flex items-center gap-1 text-blue-600 font-semibold hover:text-blue-700 transition-colors"
                   style={{ fontSize: "0.72rem" }}
                 >
@@ -234,7 +257,10 @@ export function FileUpload({
                 <div className="w-px h-3 bg-slate-200" />
                 <button
                   type="button"
-                  onClick={onRemove}
+                  onClick={() => {
+                    if (disabled) return;
+                    onRemove();
+                  }}
                   className="inline-flex items-center gap-1 text-red-400 font-semibold hover:text-red-500 transition-colors"
                   style={{ fontSize: "0.72rem" }}
                 >
@@ -251,7 +277,16 @@ export function FileUpload({
 
 // ── Submitted success view ────────────────────────────────────────────────────
 
-function SubmittedState({ onBack }: { onBack?: () => void }) {
+export function VerificationSubmittedState({
+  status = "pending",
+  onBack,
+}: {
+  status?: VerificationStatusValue;
+  onBack?: () => void;
+}) {
+  const displayStatus = getVerificationDisplayStatus(status);
+  const statusConfig = VERIFICATION_STATUS_CONFIG[displayStatus];
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -272,7 +307,7 @@ function SubmittedState({ onBack }: { onBack?: () => void }) {
       <div className="mt-5 flex items-center gap-2 bg-amber-50 border border-amber-200 px-4 py-2.5 rounded-xl">
         <Clock className="w-4 h-4 text-amber-600 shrink-0" />
         <span className="text-amber-600 font-semibold" style={{ fontSize: "0.8rem" }}>
-          Status: Pending
+          Status: {statusConfig.label}
         </span>
       </div>
       {onBack && (
@@ -292,7 +327,7 @@ function SubmittedState({ onBack }: { onBack?: () => void }) {
 
 interface VerificationFormProps {
   /** Called after successful submission so parent can show a back button */
-  onSubmitted?: () => void;
+  onSubmitted?: (status: VerificationStatusValue) => void;
   onNotify?: (message: NotificationMessage) => void;
 }
 
@@ -303,6 +338,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
   const [selfie, setSelfie] = useState<UploadedFile | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedStatus, setSubmittedStatus] = useState<VerificationStatusValue>("pending");
 
   const canSubmit =
     university.trim() !== "" && studentId.trim() !== "" && idCard !== null && selfie !== null;
@@ -319,9 +355,16 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
     formData.append("selfie", selfie.file);
 
     try {
-      await submitStudentVerification(formData);
+      const response = await submitStudentVerification(formData);
+      const status = response.data.status;
+
+      setSubmittedStatus(status);
       setSubmitted(true);
-      onSubmitted?.();
+      onSubmitted?.(status);
+      onNotify?.({
+        type: "success",
+        text: "Verification submitted successfully. Your documents have been submitted for review.",
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Verification request could not be submitted.";
@@ -341,7 +384,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <SubmittedState />
+            <VerificationSubmittedState status={submittedStatus} />
           </motion.div>
         ) : (
           <motion.div
@@ -399,6 +442,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
               file={idCard}
               onFile={setIdCard}
               onRemove={() => setIdCard(null)}
+              disabled={submitting}
             />
 
             <FileUpload
@@ -407,6 +451,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
               file={selfie}
               onFile={setSelfie}
               onRemove={() => setSelfie(null)}
+              disabled={submitting}
             />
 
             {!canSubmit && (university || studentId || idCard || selfie) && (

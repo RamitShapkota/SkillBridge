@@ -7,13 +7,17 @@ import {
 import { SettingsLayout } from "../../app/components/layout/SettingsLayout";
 import { getProfile, setProfile, subscribeProfile } from "../../app/data/profileStore";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
-import { VerificationForm } from "../../app/components/shared/VerificationForm";
+import {
+  VerificationForm,
+  VerificationSubmittedState,
+} from "../../app/components/shared/VerificationForm";
 import {
   getVerificationDisplayStatus,
   VerificationDocumentsSection,
   VerificationHelpMessage,
   VerificationStatusCard,
   type VerificationDisplayStatus,
+  type VerificationStatusValue,
 } from "../../app/components/shared/VerificationStatusCard";
 import { PasswordChangeForm } from "../../app/components/shared/PasswordChangeForm";
 import {
@@ -719,7 +723,15 @@ function VerificationSection({ onNotify }: { onNotify: (message: NotificationMes
   const [verificationStatus, setVerificationStatus] = useState<VerificationDisplayStatus>(
     getVerificationDisplayStatus(null)
   );
+  const [submitted, setSubmitted] = useState(false);
+  const [submittedStatus, setSubmittedStatus] = useState<VerificationStatusValue>("pending");
   const canSubmit = verificationStatus === "not-verified" || verificationStatus === "rejected";
+
+  const handleSubmitted = (status: VerificationStatusValue) => {
+    setSubmitted(true);
+    setSubmittedStatus(status);
+    setVerificationStatus(getVerificationDisplayStatus(status));
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -732,12 +744,13 @@ function VerificationSection({ onNotify }: { onNotify: (message: NotificationMes
         </p>
       </div>
       <VerificationStatusCard status={verificationStatus} />
-      {canSubmit ? (
+      {submitted ? (
         <VerificationDocumentsSection>
-          <VerificationForm
-            onSubmitted={() => setVerificationStatus("pending")}
-            onNotify={onNotify}
-          />
+          <VerificationSubmittedState status={submittedStatus} />
+        </VerificationDocumentsSection>
+      ) : canSubmit ? (
+        <VerificationDocumentsSection>
+          <VerificationForm onSubmitted={handleSubmitted} onNotify={onNotify} />
         </VerificationDocumentsSection>
       ) : (
         <VerificationHelpMessage status={verificationStatus} />
