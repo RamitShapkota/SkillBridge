@@ -1,32 +1,28 @@
-import { Job } from "../models/job.model.js";
-import mongoose from "mongoose";
-import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-const cancelJob = asyncHandler(async (req, res) => {
-  const { jobId } = req.params;
-
-  if (!mongoose.isValidObjectId(jobId)) {
-    throw new ApiError(400, "Invalid job id");
-  }
-
-  const job = await Job.findById(jobId);
-
-  if (!job) {
-    throw new ApiError(404, "Job not found");
-  }
-
-  if (job.client.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "You can only cancel your own jobs");
-  }
-
-  job.status = "cancelled";
-  await job.save();
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, job, "Job cancelled successfully"));
+const createJob = asyncHandler(async (req, res) => {
 });
 
-export { cancelJob };
+const getClientJobs = asyncHandler(async (req, res) => {
+});
+
+const getAllOpenJobs = asyncHandler(async (req, res) => {
+});
+
+const getJobById = asyncHandler(async (req, res) => {
+});
+
+const updateJob = asyncHandler(async (req, res) => {
+});
+
+const cancelJob = asyncHandler(async (req, res) => {
+});
+
+export {
+  createJob,
+  getClientJobs,
+  getAllOpenJobs,
+  getJobById,
+  updateJob,
+  cancelJob,
+};

@@ -1,10 +1,31 @@
 import { Router } from "express";
-import { cancelJob } from "../controllers/job.controller.js";
+import {
+  cancelJob,
+  createJob,
+  getAllOpenJobs,
+  getClientJobs,
+  getJobById,
+  updateJob,
+} from "../controllers/job.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 
 const router = Router();
+const studentRoles = authorizeRoles("student");
+const clientRoles = authorizeRoles("client");
 
-router.route("/:jobId/cancel").patch(verifyJWT, authorizeRoles("client"), cancelJob);
+router
+  .route("/")
+  .post(verifyJWT, clientRoles, createJob)
+  .get(verifyJWT, studentRoles, getAllOpenJobs);
+
+router.route("/my-jobs").get(verifyJWT, clientRoles, getClientJobs);
+
+router
+  .route("/:jobId")
+  .get(verifyJWT, getJobById)
+  .patch(verifyJWT, clientRoles, updateJob);
+
+router.route("/:jobId/cancel").patch(verifyJWT, clientRoles, cancelJob);
 
 export default router;
