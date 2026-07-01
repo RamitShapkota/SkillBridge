@@ -291,6 +291,111 @@ const updateStudentVerification = asyncHandler(async (req, res) => {
     );
 });
 
+const updateClientVerification = asyncHandler(async (req, res) => {
+  const { legalName, phone } = req.body || {};
+
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  if (req.user.role !== "client") {
+    throw new ApiError(403, "Only clients can update client verification");
+  }
+
+  if (!legalName?.trim() || !phone?.trim()) {
+    throw new ApiError(400, "Legal name and phone number are required");
+  }
+
+  const verification = await Verification.findOne({
+    user: req.user._id,
+    type: "client",
+  });
+
+  if (!verification) {
+    throw new ApiError(404, "Client verification not found");
+  }
+
+  if (verification.type !== "client") {
+    throw new ApiError(400, "Invalid verification type");
+  }
+
+  if (verification.status === "pending") {
+    throw new ApiError(
+      409,
+      "Client verification cannot be edited while under review"
+    );
+  }
+
+  if (verification.status === "approved") {
+    throw new ApiError(409, "Approved verification cannot be modified");
+  }
+
+  if (verification.status !== "rejected") {
+    throw new ApiError(400, "Only rejected verification can be updated");
+  }
+
+  const citizenshipFrontLocalPath = req.files?.citizenshipFront?.[0]?.path;
+  const citizenshipSelfieLocalPath = req.files?.citizenshipSelfie?.[0]?.path;
+  const companyRegistrationLocalPath =
+    req.files?.companyRegistration?.[0]?.path;
+
+  if (citizenshipFrontLocalPath) {
+    const citizenshipFront = await uploadOnCloudinary(
+      citizenshipFrontLocalPath
+    );
+
+    if (!citizenshipFront?.url) {
+      throw new ApiError(500, "Citizenship front photo upload failed");
+    }
+
+    verification.citizenshipFront = citizenshipFront.url;
+  }
+
+  if (citizenshipSelfieLocalPath) {
+    const citizenshipSelfie = await uploadOnCloudinary(
+      citizenshipSelfieLocalPath
+    );
+
+    if (!citizenshipSelfie?.url) {
+      throw new ApiError(500, "Citizenship selfie upload failed");
+    }
+
+    verification.citizenshipSelfie = citizenshipSelfie.url;
+  }
+
+  if (companyRegistrationLocalPath) {
+    const companyRegistration = await uploadOnCloudinary(
+      companyRegistrationLocalPath
+    );
+
+    if (!companyRegistration?.url) {
+      throw new ApiError(500, "Company registration document upload failed");
+    }
+
+    verification.companyRegistrationDocument = companyRegistration.url;
+  }
+
+  verification.legalName = legalName.trim();
+  verification.phone = phone.trim();
+  verification.status = "pending";
+  verification.submittedAt = new Date();
+  verification.verifiedBy = null;
+  verification.verifiedAt = null;
+  verification.rejectionReason = "";
+
+  await verification.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        verification,
+        "Client verification updated successfully"
+      )
+    );
+});
+
 const updateVerification = asyncHandler(async (req, res) => {
 });
 
@@ -299,5 +404,6 @@ export {
   submitClientVerification,
   getVerificationStatus,
   updateStudentVerification,
+  updateClientVerification,
   updateVerification,
 };
