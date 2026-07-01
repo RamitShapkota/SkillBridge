@@ -15,14 +15,14 @@ import {
 import { JOB_CATEGORY_LABELS, JOB_DURATION_LABELS, JOB_SKILL_COLORS } from "../../constants/job.constants";
 import type { BrowseJob } from "../../types";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Types 
 
 interface ApplyModalProps {
   job: BrowseJob;
   onClose: () => void;
 }
 
-// ── Config ────────────────────────────────────────────────────────────────────
+// Config
 
 const TIME_OPTIONS = [
   { value: "1d", label: "1 Day" },
@@ -45,7 +45,7 @@ const STUDENT_PROFILE = {
   verificationStatus: "pending" as const,
 };
 
-// ── Chip selector ─────────────────────────────────────────────────────────────
+// Chip selector
 
 function TimeChip({
   label,
@@ -77,7 +77,7 @@ function TimeChip({
   );
 }
 
-// ── Profile preview ───────────────────────────────────────────────────────────
+// Profile preview
 
 function SkillChip({
   skill,
