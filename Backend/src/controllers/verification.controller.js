@@ -204,6 +204,93 @@ const getVerificationStatus = asyncHandler(async (req, res) => {
     );
 });
 
+const updateStudentVerification = asyncHandler(async (req, res) => {
+  const { university, studentId } = req.body || {};
+
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  if (req.user.role !== "student") {
+    throw new ApiError(403, "Only students can update student verification");
+  }
+
+  if (!university?.trim() || !studentId?.trim()) {
+    throw new ApiError(400, "College name and student ID are required");
+  }
+
+  const verification = await Verification.findOne({
+    user: req.user._id,
+    type: "student",
+  });
+
+  if (!verification) {
+    throw new ApiError(404, "Student verification not found");
+  }
+
+  if (verification.type !== "student") {
+    throw new ApiError(400, "Invalid verification type");
+  }
+
+  if (verification.status === "pending") {
+    throw new ApiError(
+      409,
+      "Student verification cannot be edited while under review"
+    );
+  }
+
+  if (verification.status === "approved") {
+    throw new ApiError(409, "Approved verification cannot be modified");
+  }
+
+  if (verification.status !== "rejected") {
+    throw new ApiError(400, "Only rejected verification can be updated");
+  }
+
+  const collegeIdCardLocalPath = req.files?.idCard?.[0]?.path;
+  const studentSelfieLocalPath = req.files?.selfie?.[0]?.path;
+
+  if (collegeIdCardLocalPath) {
+    const collegeIdCard = await uploadOnCloudinary(collegeIdCardLocalPath);
+
+    if (!collegeIdCard?.url) {
+      throw new ApiError(500, "College ID card upload failed");
+    }
+
+    verification.collegeIdCard = collegeIdCard.url;
+  }
+
+  if (studentSelfieLocalPath) {
+    const studentSelfie = await uploadOnCloudinary(studentSelfieLocalPath);
+
+    if (!studentSelfie?.url) {
+      throw new ApiError(500, "Student selfie upload failed");
+    }
+
+    verification.studentSelfie = studentSelfie.url;
+  }
+
+  verification.collegeName = university.trim();
+  verification.studentId = studentId.trim();
+  verification.status = "pending";
+  verification.submittedAt = new Date();
+  verification.verifiedBy = null;
+  verification.verifiedAt = null;
+  verification.rejectionReason = "";
+
+  await verification.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        verification,
+        "Student verification updated successfully"
+      )
+    );
+});
+
 const updateVerification = asyncHandler(async (req, res) => {
 });
 
@@ -211,5 +298,6 @@ export {
   submitStudentVerification,
   submitClientVerification,
   getVerificationStatus,
+  updateStudentVerification,
   updateVerification,
 };
