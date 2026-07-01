@@ -13,10 +13,13 @@ import {
   Clock,
   RefreshCw,
 } from "lucide-react";
+import { submitStudentVerification } from "../../../services/verificationService";
+import type { NotificationMessage } from "./ui";
 
 // Types 
 
 export interface UploadedFile {
+  file: File;
   name: string;
   size: number;
   type: string;
@@ -56,6 +59,7 @@ export function FileUpload({
     (raw: File) => {
       const isImage = raw.type.startsWith("image/");
       onFile({
+        file: raw,
         name: raw.name,
         size: raw.size,
         type: raw.type,
@@ -289,9 +293,10 @@ function SubmittedState({ onBack }: { onBack?: () => void }) {
 interface VerificationFormProps {
   /** Called after successful submission so parent can show a back button */
   onSubmitted?: () => void;
+  onNotify?: (message: NotificationMessage) => void;
 }
 
-export function VerificationForm({ onSubmitted }: VerificationFormProps) {
+export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProps) {
   const [university, setUniversity] = useState("");
   const [studentId, setStudentId] = useState("");
   const [idCard, setIdCard] = useState<UploadedFile | null>(null);
@@ -302,15 +307,28 @@ export function VerificationForm({ onSubmitted }: VerificationFormProps) {
   const canSubmit =
     university.trim() !== "" && studentId.trim() !== "" && idCard !== null && selfie !== null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit || submitting || !idCard || !selfie) return;
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+
+    const formData = new FormData();
+    formData.append("university", university);
+    formData.append("studentId", studentId);
+    formData.append("idCard", idCard.file);
+    formData.append("selfie", selfie.file);
+
+    try {
+      await submitStudentVerification(formData);
       setSubmitted(true);
       onSubmitted?.();
-    }, 1600);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Verification request could not be submitted.";
+      onNotify?.({ type: "error", text: message });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

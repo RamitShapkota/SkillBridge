@@ -715,7 +715,7 @@ function SocialSection({ onNotify }: { onNotify: (message: NotificationMessage) 
 
 // Identity Verification
 
-function VerificationSection() {
+function VerificationSection({ onNotify }: { onNotify: (message: NotificationMessage) => void }) {
   const [verificationStatus, setVerificationStatus] = useState<VerificationDisplayStatus>(
     getVerificationDisplayStatus(null)
   );
@@ -734,7 +734,10 @@ function VerificationSection() {
       <VerificationStatusCard status={verificationStatus} />
       {canSubmit ? (
         <VerificationDocumentsSection>
-          <VerificationForm onSubmitted={() => setVerificationStatus("pending")} />
+          <VerificationForm
+            onSubmitted={() => setVerificationStatus("pending")}
+            onNotify={onNotify}
+          />
         </VerificationDocumentsSection>
       ) : (
         <VerificationHelpMessage status={verificationStatus} />
@@ -850,7 +853,7 @@ export default function StudentSettingsPage() {
   const CONTENT: Record<SettingsSection, React.ReactNode> = {
     profile: <ProfileSection onNotify={setNotification} />,
     social: <SocialSection onNotify={setNotification} />,
-    verification: <VerificationSection />,
+    verification: <VerificationSection onNotify={setNotification} />,
     account: <AccountSection />,
   };
 
