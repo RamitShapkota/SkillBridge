@@ -83,6 +83,103 @@ const submitStudentVerification = asyncHandler(async (req, res) => {
 });
 
 const submitClientVerification = asyncHandler(async (req, res) => {
+  const { legalName, phone } = req.body || {};
+
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  if (req.user.role !== "client") {
+    throw new ApiError(403, "Only clients can submit client verification");
+  }
+
+  if (!legalName?.trim() || !phone?.trim()) {
+    throw new ApiError(400, "Legal name and phone number are required");
+  }
+
+  const citizenshipFrontLocalPath = req.files?.citizenshipFront?.[0]?.path;
+  const citizenshipSelfieLocalPath = req.files?.citizenshipSelfie?.[0]?.path;
+  const companyRegistrationLocalPath =
+    req.files?.companyRegistration?.[0]?.path;
+
+  if (!citizenshipFrontLocalPath || !citizenshipSelfieLocalPath) {
+    throw new ApiError(
+      400,
+      "Citizenship front photo and citizenship selfie are required"
+    );
+  }
+
+  const existingVerification = await Verification.findOne({
+    user: req.user._id,
+  });
+
+  if (existingVerification?.status === "pending") {
+    throw new ApiError(409, "Verification request is already pending");
+  }
+
+  if (existingVerification?.status === "approved") {
+    throw new ApiError(409, "Client verification is already approved");
+  }
+
+  if (existingVerification?.status === "rejected") {
+    throw new ApiError(
+      409,
+      "Rejected verification must be updated instead of submitted again"
+    );
+  }
+
+  const citizenshipFront = await uploadOnCloudinary(citizenshipFrontLocalPath);
+
+  if (!citizenshipFront?.url) {
+    throw new ApiError(500, "Citizenship front photo upload failed");
+  }
+
+  const citizenshipSelfie = await uploadOnCloudinary(
+    citizenshipSelfieLocalPath
+  );
+
+  if (!citizenshipSelfie?.url) {
+    throw new ApiError(500, "Citizenship selfie upload failed");
+  }
+
+  let companyRegistrationDocument = "";
+
+  if (companyRegistrationLocalPath) {
+    const companyRegistration = await uploadOnCloudinary(
+      companyRegistrationLocalPath
+    );
+
+    if (!companyRegistration?.url) {
+      throw new ApiError(500, "Company registration document upload failed");
+    }
+
+    companyRegistrationDocument = companyRegistration.url;
+  }
+
+  const verification = await Verification.create({
+    user: req.user._id,
+    type: "client",
+    status: "pending",
+    legalName: legalName.trim(),
+    phone: phone.trim(),
+    citizenshipFront: citizenshipFront.url,
+    citizenshipSelfie: citizenshipSelfie.url,
+    companyRegistrationDocument,
+    submittedAt: new Date(),
+    verifiedBy: null,
+    verifiedAt: null,
+    rejectionReason: "",
+  });
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        verification,
+        "Client verification submitted successfully"
+      )
+    );
 });
 
 const getVerificationStatus = asyncHandler(async (req, res) => {

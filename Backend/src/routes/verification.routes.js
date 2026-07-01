@@ -27,7 +27,16 @@ router
 
 router
   .route("/client")
-  .post(verifyJWT, clientRoles, submitClientVerification);
+  .post(
+    verifyJWT,
+    clientRoles,
+    upload.fields([
+      { name: "citizenshipFront", maxCount: 1 },
+      { name: "citizenshipSelfie", maxCount: 1 },
+      { name: "companyRegistration", maxCount: 1 },
+    ]),
+    submitClientVerification
+  );
 
 router.route("/status").get(verifyJWT, getVerificationStatus);
 
