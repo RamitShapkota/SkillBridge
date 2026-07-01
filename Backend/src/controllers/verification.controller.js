@@ -183,6 +183,25 @@ const submitClientVerification = asyncHandler(async (req, res) => {
 });
 
 const getVerificationStatus = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  const verification = await Verification.findOne({
+    user: req.user._id,
+  });
+
+  if (!verification) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "No verification submitted."));
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, verification, "Verification fetched successfully")
+    );
 });
 
 const updateVerification = asyncHandler(async (req, res) => {
