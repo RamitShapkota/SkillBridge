@@ -14,7 +14,10 @@ import {
 import {
   getVerificationDisplayStatus,
   VerificationDocumentsSection,
+  VerificationErrorMessage,
   VerificationHelpMessage,
+  VerificationLoadingMessage,
+  VerificationRejectionReason,
   VerificationStatusCard,
   type VerificationDisplayStatus,
   type VerificationStatusValue,
@@ -27,6 +30,10 @@ import {
 } from "../../app/components/shared/ui";
 import { getStudentProfile, updateStudentProfile } from "../../services/studentProfileService";
 import { updateAccountDetails, uploadAvatar } from "../../services/authService";
+import {
+  getVerificationStatus,
+  type VerificationData,
+} from "../../services/verificationService";
 import {
   User,
   Link2,
@@ -720,17 +727,64 @@ function SocialSection({ onNotify }: { onNotify: (message: NotificationMessage) 
 // Identity Verification
 
 function VerificationSection({ onNotify }: { onNotify: (message: NotificationMessage) => void }) {
-  const [verificationStatus, setVerificationStatus] = useState<VerificationDisplayStatus>(
-    getVerificationDisplayStatus(null)
-  );
+  const [verification, setVerification] = useState<VerificationData | null>(null);
+  const [loadingVerification, setLoadingVerification] = useState(true);
+  const [verificationError, setVerificationError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submittedStatus, setSubmittedStatus] = useState<VerificationStatusValue>("pending");
+  const verificationStatus = getVerificationDisplayStatus(verification?.status ?? null);
   const canSubmit = verificationStatus === "not-verified" || verificationStatus === "rejected";
 
-  const handleSubmitted = (status: VerificationStatusValue) => {
+  useEffect(() => {
+    let mounted = true;
+
+    const loadVerificationStatus = async () => {
+      setLoadingVerification(true);
+      setVerificationError("");
+
+      try {
+        const response = await getVerificationStatus();
+
+        if (!mounted) return;
+
+        setVerification(response.data);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Verification status could not be loaded.";
+
+        if (mounted) {
+          setVerificationError(message);
+        }
+      } finally {
+        if (mounted) {
+          setLoadingVerification(false);
+        }
+      }
+    };
+
+    loadVerificationStatus();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const reloadVerificationStatus = async () => {
+    try {
+      const response = await getVerificationStatus();
+      setVerification(response.data);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Verification status could not be loaded.";
+      setVerificationError(message);
+    }
+  };
+
+  const handleSubmitted = (submittedVerification: VerificationData) => {
     setSubmitted(true);
-    setSubmittedStatus(status);
-    setVerificationStatus(getVerificationDisplayStatus(status));
+    setSubmittedStatus(submittedVerification.status);
+    setVerification(submittedVerification);
+    reloadVerificationStatus();
   };
 
   return (
@@ -743,6 +797,12 @@ function VerificationSection({ onNotify }: { onNotify: (message: NotificationMes
           Verify your student identity to build trust with clients and unlock platform features.
         </p>
       </div>
+      {loadingVerification ? (
+        <VerificationLoadingMessage />
+      ) : verificationError ? (
+        <VerificationErrorMessage message={verificationError} />
+      ) : (
+        <>
       <VerificationStatusCard status={verificationStatus} />
       {submitted ? (
         <VerificationDocumentsSection>
@@ -750,10 +810,21 @@ function VerificationSection({ onNotify }: { onNotify: (message: NotificationMes
         </VerificationDocumentsSection>
       ) : canSubmit ? (
         <VerificationDocumentsSection>
-          <VerificationForm onSubmitted={handleSubmitted} onNotify={onNotify} />
+          {verificationStatus === "rejected" && verification?.rejectionReason && (
+            <VerificationRejectionReason reason={verification.rejectionReason} />
+          )}
+          <VerificationForm
+            initialUniversity={verification?.collegeName ?? ""}
+            initialStudentId={verification?.studentId ?? ""}
+            mode={verificationStatus === "rejected" ? "update" : "submit"}
+            onSubmitted={handleSubmitted}
+            onNotify={onNotify}
+          />
         </VerificationDocumentsSection>
       ) : (
         <VerificationHelpMessage status={verificationStatus} />
+      )}
+        </>
       )}
     </div>
   );

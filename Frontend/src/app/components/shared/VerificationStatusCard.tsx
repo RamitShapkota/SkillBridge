@@ -1,4 +1,5 @@
 import type { ElementType, ReactNode } from "react";
+import { motion } from "motion/react";
 import { CheckCircle, Clock, ShieldCheck, XCircle } from "lucide-react";
 import { StatusBadge, type StatusBadgeConfig } from "./ui";
 
@@ -49,7 +50,7 @@ export const VERIFICATION_STATUS_CONFIG: Record<
   },
   pending: {
     label: "Pending",
-    description: "Your verification request has been submitted and is waiting for admin review.",
+    description: "Your verification request has been submitted. It is currently under admin review.",
     icon: Clock,
     iconColor: "#D97706",
     iconBg: "#FFFBEB",
@@ -76,7 +77,7 @@ export const VERIFICATION_STATUS_CONFIG: Record<
   rejected: {
     label: "Rejected",
     description:
-      "Your verification request was rejected. Please review the feedback and submit again.",
+      "Your verification request was rejected. Please review the rejection reason and update your information.",
     icon: XCircle,
     iconColor: "#DC2626",
     iconBg: "#FEF2F2",
@@ -132,6 +133,48 @@ export function VerificationDocumentsSection({ children }: { children: ReactNode
         </p>
       </div>
       {children}
+    </div>
+  );
+}
+
+export function VerificationLoadingMessage() {
+  return (
+    <div className="flex items-center gap-3 rounded-xl px-4 py-3 border border-slate-200 bg-slate-50">
+      <motion.span
+        className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-blue-600"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+      />
+      <p className="text-slate-500" style={{ fontSize: "0.78rem" }}>
+        Loading verification status...
+      </p>
+    </div>
+  );
+}
+
+export function VerificationErrorMessage({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+      <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+      <p className="text-red-600" style={{ fontSize: "0.78rem" }}>
+        {message}
+      </p>
+    </div>
+  );
+}
+
+export function VerificationRejectionReason({ reason }: { reason: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl px-4 py-3 border border-red-200 bg-red-50">
+      <XCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+      <div>
+        <p className="text-red-600 font-semibold" style={{ fontSize: "0.78rem" }}>
+          Rejection Reason
+        </p>
+        <p className="text-red-600 mt-0.5" style={{ fontSize: "0.78rem" }}>
+          {reason}
+        </p>
+      </div>
     </div>
   );
 }

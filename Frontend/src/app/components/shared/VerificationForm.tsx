@@ -1,7 +1,7 @@
 // Reusable verification form — used in StudentSettingsPage.
 // Contains all form logic; wrapping (DashboardLayout, card chrome) is handled by the caller.
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ShieldCheck,
@@ -13,7 +13,10 @@ import {
   Clock,
   RefreshCw,
 } from "lucide-react";
-import { submitStudentVerification } from "../../../services/verificationService";
+import {
+  submitStudentVerification,
+  type VerificationData,
+} from "../../../services/verificationService";
 import {
   getVerificationDisplayStatus,
   VERIFICATION_STATUS_CONFIG,
@@ -327,25 +330,45 @@ export function VerificationSubmittedState({
 
 interface VerificationFormProps {
   /** Called after successful submission so parent can show a back button */
-  onSubmitted?: (status: VerificationStatusValue) => void;
+  onSubmitted?: (verification: VerificationData) => void;
   onNotify?: (message: NotificationMessage) => void;
+  initialUniversity?: string;
+  initialStudentId?: string;
+  mode?: "submit" | "update";
+  disabled?: boolean;
 }
 
-export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProps) {
-  const [university, setUniversity] = useState("");
-  const [studentId, setStudentId] = useState("");
+export function VerificationForm({
+  onSubmitted,
+  onNotify,
+  initialUniversity = "",
+  initialStudentId = "",
+  mode = "submit",
+  disabled = false,
+}: VerificationFormProps) {
+  const [university, setUniversity] = useState(initialUniversity);
+  const [studentId, setStudentId] = useState(initialStudentId);
   const [idCard, setIdCard] = useState<UploadedFile | null>(null);
   const [selfie, setSelfie] = useState<UploadedFile | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submittedStatus, setSubmittedStatus] = useState<VerificationStatusValue>("pending");
 
+  useEffect(() => {
+    setUniversity(initialUniversity);
+    setStudentId(initialStudentId);
+  }, [initialStudentId, initialUniversity]);
+
   const canSubmit =
-    university.trim() !== "" && studentId.trim() !== "" && idCard !== null && selfie !== null;
+    !disabled &&
+    university.trim() !== "" &&
+    studentId.trim() !== "" &&
+    idCard !== null &&
+    selfie !== null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit || submitting || !idCard || !selfie) return;
+    if (mode === "update" || !canSubmit || submitting || !idCard || !selfie) return;
     setSubmitting(true);
 
     const formData = new FormData();
@@ -360,7 +383,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
 
       setSubmittedStatus(status);
       setSubmitted(true);
-      onSubmitted?.(status);
+      onSubmitted?.(response.data);
       onNotify?.({
         type: "success",
         text: "Verification submitted successfully. Your documents have been submitted for review.",
@@ -409,6 +432,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
                 placeholder="Enter your college name"
                 value={university}
                 onChange={(e) => setUniversity(e.target.value)}
+                disabled={disabled}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                 style={{ fontSize: "0.875rem" }}
               />
@@ -429,6 +453,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
                 placeholder="Enter your student ID number"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
+                disabled={disabled}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 placeholder-slate-300 outline-none transition-all focus:bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-600/10"
                 style={{ fontSize: "0.875rem" }}
               />
@@ -442,7 +467,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
               file={idCard}
               onFile={setIdCard}
               onRemove={() => setIdCard(null)}
-              disabled={submitting}
+              disabled={disabled || submitting}
             />
 
             <FileUpload
@@ -451,7 +476,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
               file={selfie}
               onFile={setSelfie}
               onRemove={() => setSelfie(null)}
-              disabled={submitting}
+              disabled={disabled || submitting}
             />
 
             {!canSubmit && (university || studentId || idCard || selfie) && (
@@ -464,10 +489,10 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
             )}
 
             <button
-              type="submit"
-              disabled={!canSubmit || submitting}
+              type={mode === "update" ? "button" : "submit"}
+              disabled={mode === "update" ? disabled || submitting : !canSubmit || submitting}
               className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-all ${
-                canSubmit && !submitting
+                ((mode === "update" && !disabled) || canSubmit) && !submitting
                   ? "bg-blue-600 text-white shadow-md hover:bg-blue-700"
                   : "bg-slate-100 text-slate-300 cursor-not-allowed"
               }`}
@@ -485,7 +510,7 @@ export function VerificationForm({ onSubmitted, onNotify }: VerificationFormProp
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  Submit Verification
+                  {mode === "update" ? "Update Verification" : "Submit Verification"}
                 </>
               )}
             </button>

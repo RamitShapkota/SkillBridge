@@ -17,7 +17,10 @@ import {
 import {
   getVerificationDisplayStatus,
   VerificationDocumentsSection,
+  VerificationErrorMessage,
   VerificationHelpMessage,
+  VerificationLoadingMessage,
+  VerificationRejectionReason,
   VerificationStatusCard,
   type VerificationDisplayStatus,
   type VerificationStatusValue,
@@ -28,7 +31,11 @@ import {
   Notification,
   type NotificationMessage,
 } from "../../app/components/shared/ui";
-import { submitClientVerification } from "../../services/verificationService";
+import {
+  getVerificationStatus,
+  submitClientVerification,
+  type VerificationData,
+} from "../../services/verificationService";
 import { User, ShieldCheck, Lock, Check, Upload, Trash2, AlertCircle } from "lucide-react";
 
 // Nav
@@ -382,13 +389,9 @@ function KycSection({
   onStatusChange?: (s: VerificationDisplayStatus) => void;
   onNotify: (message: NotificationMessage) => void;
 }) {
-  const [status, setStatus] = useState<VerificationDisplayStatus>(
-    getVerificationDisplayStatus(null)
-  );
-  const updateStatus = (s: VerificationDisplayStatus) => {
-    setStatus(s);
-    onStatusChange?.(s);
-  };
+  const [verification, setVerification] = useState<VerificationData | null>(null);
+  const [loadingVerification, setLoadingVerification] = useState(true);
+  const [verificationError, setVerificationError] = useState("");
   const [legalName, setLegalName] = useState("");
   const [phone, setPhone] = useState("");
   const [companyKyc, setCompanyKyc] = useState("");
@@ -400,6 +403,7 @@ function KycSection({
   const [submittedStatus, setSubmittedStatus] = useState<VerificationStatusValue>("pending");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const status = getVerificationDisplayStatus(verification?.status ?? null);
   const canSubmit = status === "not-verified" || status === "rejected";
   const canSubmitDocuments =
     legalName.trim() !== "" &&
@@ -416,8 +420,62 @@ function KycSection({
     return e;
   };
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadVerificationStatus = async () => {
+      setLoadingVerification(true);
+      setVerificationError("");
+
+      try {
+        const response = await getVerificationStatus();
+
+        if (!mounted) return;
+
+        setVerification(response.data);
+        onStatusChange?.(getVerificationDisplayStatus(response.data?.status ?? null));
+
+        if (response.data) {
+          setLegalName(response.data.legalName ?? "");
+          setPhone(response.data.phone ?? "");
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Verification status could not be loaded.";
+
+        if (mounted) {
+          setVerificationError(message);
+        }
+      } finally {
+        if (mounted) {
+          setLoadingVerification(false);
+        }
+      }
+    };
+
+    loadVerificationStatus();
+
+    return () => {
+      mounted = false;
+    };
+  }, [onStatusChange]);
+
+  const reloadVerificationStatus = async () => {
+    try {
+      const response = await getVerificationStatus();
+      setVerification(response.data);
+      onStatusChange?.(getVerificationDisplayStatus(response.data?.status ?? null));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Verification status could not be loaded.";
+      setVerificationError(message);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (status === "rejected") return;
+
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0 || submitting || !citizenshipFront || !citizenshipSelfie) {
@@ -443,7 +501,9 @@ function KycSection({
 
       setSubmitted(true);
       setSubmittedStatus(status);
-      updateStatus(getVerificationDisplayStatus(status));
+      setVerification(response.data);
+      onStatusChange?.(getVerificationDisplayStatus(status));
+      reloadVerificationStatus();
       onNotify({
         type: "success",
         text: "Verification submitted successfully. Your documents have been submitted for review.",
@@ -468,14 +528,23 @@ function KycSection({
         </p>
       </div>
 
-      <VerificationStatusCard status={status} />
+      {loadingVerification ? (
+        <VerificationLoadingMessage />
+      ) : verificationError ? (
+        <VerificationErrorMessage message={verificationError} />
+      ) : (
+        <>
+          <VerificationStatusCard status={status} />
 
-      {submitted ? (
-        <VerificationDocumentsSection>
-          <VerificationSubmittedState status={submittedStatus} />
-        </VerificationDocumentsSection>
-      ) : canSubmit ? (
-        <VerificationDocumentsSection>
+          {submitted ? (
+            <VerificationDocumentsSection>
+              <VerificationSubmittedState status={submittedStatus} />
+            </VerificationDocumentsSection>
+          ) : canSubmit ? (
+            <VerificationDocumentsSection>
+              {status === "rejected" && verification?.rejectionReason && (
+                <VerificationRejectionReason reason={verification.rejectionReason} />
+              )}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <FieldLabel text="Legal Name" required />
@@ -554,10 +623,10 @@ function KycSection({
 
             <div className="pt-1 border-t border-black/[0.05]">
               <button
-                type="submit"
-                disabled={!canSubmitDocuments || submitting}
+                type={status === "rejected" ? "button" : "submit"}
+                disabled={status === "rejected" ? submitting : !canSubmitDocuments || submitting}
                 className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-all ${
-                  canSubmitDocuments && !submitting
+                  ((status === "rejected" || canSubmitDocuments) && !submitting)
                     ? "bg-blue-600 text-white shadow-md hover:bg-blue-700"
                     : "bg-slate-100 text-slate-300 cursor-not-allowed"
                 }`}
@@ -575,7 +644,7 @@ function KycSection({
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    Submit Verification
+                    {status === "rejected" ? "Update Verification" : "Submit Verification"}
                   </>
                 )}
               </button>
@@ -584,6 +653,8 @@ function KycSection({
         </VerificationDocumentsSection>
       ) : (
         <VerificationHelpMessage status={status} />
+      )}
+        </>
       )}
     </div>
   );
