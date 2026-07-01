@@ -1,4 +1,4 @@
-ï»¿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import { DashboardLayout } from "../../app/components/layout/DashboardLayout";
@@ -6,6 +6,8 @@ import { SearchInput, SidePanel, StatusBadge } from "../../app/components/shared
 import { StudentProfileView } from "../../app/components/shared/StudentProfileView";
 import { StudentSummaryCard } from "../../app/components/shared/StudentSummaryCard";
 import { SharedJobDetailsContent } from "../../app/components/shared/SharedJobDetailsContent";
+import { JOB_CATEGORY_LABELS } from "../../constants/job.constants";
+import { getClientJobs, type JobData } from "../../services/jobService";
 import {
   PlusCircle,
   MoreVertical,
@@ -69,113 +71,58 @@ interface Job {
   applicants: Applicant[];
 }
 
-// Dummy data
+function formatJobDate(date?: string) {
+  if (!date) return "";
 
-const JOBS_INIT: Job[] = [
-  {
-    id: "j1",
-    title: "Landing Page Design",
-    category: "UI/UX Design",
-    categoryKey: "ui-ux",
-    status: "open",
-    budget: "NPR 8,000",
-    budgetRaw: "8000",
-    postedAt: "2 days ago",
-    description:
-      "Design a modern, conversion-focused landing page for our online learning platform. Must be clean, mobile-responsive, with strong CTAs and brand-aligned visuals.",
-    requirements:
-      "Use our brand colors (blue and white). Include hero, features, testimonials, and CTA sections. Deliverable: Full Figma prototype + exported assets.",
-    complexity: "medium",
-    duration: "7d",
-    deadline: "2026-07-01",
-    skills: ["Figma", "UI Design", "Prototyping"],
-    applicants: [
-      {
-        id: "a1",
-        name: "Priya Sharma",
-        initials: "PS",
-        education: "BE Computer Engineering",
-        university: "Kathmandu University",
-        verified: true,
-        skills: [
-          { name: "Figma", verified: true },
-          { name: "React", verified: true },
-          { name: "UI Design", verified: true },
-          { name: "Canva", verified: false },
-        ],
-        rating: 4.9,
-        reviewCount: 12,
-        completedProjects: 5,
-        appliedAt: "1 day ago",
-        status: "pending",
-        bio: "UI/UX Designer passionate about creating clean, user-centered interfaces that convert and delight.",
-        github: "github.com/priyasharma",
-        linkedin: "linkedin.com/in/priyasharma",
-        portfolio: "priyasharma.com",
-      },
-    ],
-  },
-  {
-    id: "j4",
-    title: "Social Media Design Kit",
-    category: "Graphic Design",
-    categoryKey: "graphic",
-    status: "closed",
-    budget: "NPR 3,500",
-    budgetRaw: "3500",
-    postedAt: "14 days ago",
-    description:
-      "Create 20 branded social media post templates for Instagram, Facebook, and LinkedIn in Canva.",
-    requirements:
-      "Templates must cover: announcements, quotes, product features. All editable in Canva. Export as PNG and Canva share links.",
-    complexity: "small",
-    duration: "5d",
-    deadline: "2026-06-20",
-    skills: ["Canva", "Graphic Design", "Social Media"],
-    applicants: [
-      {
-        id: "a7",
-        name: "Aakash Thapa",
-        initials: "AT",
-        education: "Bachelor in Graphic Design",
-        university: "Tribhuvan University",
-        verified: true,
-        skills: [
-          { name: "Canva", verified: true },
-          { name: "Illustrator", verified: true },
-          { name: "Social Media", verified: false },
-        ],
-        rating: 4.9,
-        reviewCount: 15,
-        completedProjects: 4,
-        appliedAt: "12 days ago",
-        status: "hired",
-        bio: "Graphic designer with a love for brand identity and social media content creation.",
-        linkedin: "linkedin.com/in/aakashthapa",
-      },
-    ],
-  },
-  {
-    id: "j5",
-    title: "WordPress Contact Form Fix",
-    category: "Basic Tech Service",
-    categoryKey: "other",
-    status: "cancelled",
-    budget: "NPR 2,000",
-    budgetRaw: "2000",
-    postedAt: "3 days ago",
-    description:
-      "Fix a broken WordPress contact form and confirm messages are delivered to the client's email inbox.",
-    requirements:
-      "Check the form plugin settings, SMTP configuration, and submit a short note explaining the fix.",
-    complexity: "small",
-    duration: "1d",
-    deadline: "2026-06-29",
-    skills: ["WordPress", "Forms", "SMTP"],
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "";
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDeadline(date?: string) {
+  if (!date) return "";
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return date;
+
+  return parsedDate.toISOString().split("T")[0];
+}
+
+function mapJobFromApi(job: JobData): Job {
+  const categoryKey = job.category;
+  const budgetRaw = String(job.budget ?? "");
+  const numericBudget = Number(job.budget);
+  const budget = Number.isNaN(numericBudget)
+    ? `NPR ${budgetRaw}`
+    : `NPR ${numericBudget.toLocaleString("en-IN")}`;
+  const status = job.status === "closed" || job.status === "cancelled" ? job.status : "open";
+
+  return {
+    id: job._id ?? "",
+    title: job.title,
+    category:
+      JOB_CATEGORY_LABELS[categoryKey as keyof typeof JOB_CATEGORY_LABELS] ?? categoryKey,
+    categoryKey,
+    status,
+    budget,
+    budgetRaw,
+    postedAt: formatJobDate(job.createdAt),
+    description: job.description ?? "",
+    requirements: job.requirements ?? "",
+    complexity: job.complexity ?? "",
+    duration: job.duration,
+    deadline: formatDeadline(job.deadline),
+    skills: job.skills ?? [],
     applicants: [],
-  },
-];
-
+  };
+}
 // Helpers
 
 const JOB_STATUS_CFG: Record<
@@ -386,7 +333,7 @@ function DeleteModal({
   );
 }
 
-// Student Profile panel â€” uses shared StudentProfileView
+// Student Profile panel — uses shared StudentProfileView
 
 function StudentProfilePanel({
   applicant,
@@ -461,7 +408,7 @@ function StudentProfilePanel({
                     style={{ fontSize: "0.58rem" }}
                   />
                   <span className="text-slate-400" style={{ fontSize: "0.68rem" }}>
-                    Â· Applied {applicant.appliedAt} for{" "}
+                    · Applied {applicant.appliedAt} for{" "}
                     <span className="text-slate-500 font-medium">{jobTitle}</span>
                   </span>
                 </div>
@@ -469,7 +416,7 @@ function StudentProfilePanel({
             </div>
           </div>
 
-          {/* Full profile â€” shared component */}
+          {/* Full profile — shared component */}
           <div className="flex-1 overflow-y-auto p-5">
             <StudentProfileView profile={profileData} />
           </div>
@@ -913,12 +860,33 @@ function JobCard({
 
 export default function ManageJobsPage() {
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState(JOBS_INIT);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [cancelTarget, setCancelTarget] = useState<Job | null>(null);
   const [detailsJob, setDetailsJob] = useState<Job | null>(null);
   const [applicationsJob, setApplicationsJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadClientJobs = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await getClientJobs();
+      setJobs(response.data.map(mapJobFromApi));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to load jobs.");
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadClientJobs();
+  }, [loadClientJobs]);
 
   const updateAppStatus = (jobId: string, appId: string, status: AppStatus) => {
     setJobs((prev) =>
@@ -943,12 +911,8 @@ export default function ManageJobsPage() {
     }
   };
 
-  const cancelJob = (jobId: string) => {
-    setJobs((prev) =>
-      prev.map((job) => (job.id === jobId ? { ...job, status: "cancelled" } : job))
-    );
-    setDetailsJob((prev) => (prev?.id === jobId ? { ...prev, status: "cancelled" } : prev));
-    setApplicationsJob((prev) => (prev?.id === jobId ? { ...prev, status: "cancelled" } : prev));
+  const refreshJobs = () => {
+    loadClientJobs();
   };
 
   const filtered = jobs.filter((j) => {
@@ -1000,7 +964,32 @@ export default function ManageJobsPage() {
           <StatusDropdown value={statusFilter} onChange={setStatusFilter} />
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center gap-4 py-24 text-center">
+            <motion.span
+              className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-blue-600"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+            />
+            <p className="text-slate-400" style={{ fontSize: "0.82rem" }}>
+              Loading jobs...
+            </p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-4 py-24 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+              <Briefcase className="w-7 h-7 text-slate-300" />
+            </div>
+            <div>
+              <p className="text-slate-900 font-bold" style={{ fontSize: "0.95rem" }}>
+                {error}
+              </p>
+              <p className="text-slate-400 mt-1" style={{ fontSize: "0.82rem" }}>
+                Please try again later.
+              </p>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-24 text-center">
             <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
               <Briefcase className="w-7 h-7 text-slate-300" />
@@ -1059,7 +1048,7 @@ export default function ManageJobsPage() {
           <DeleteModal
             jobTitle={cancelTarget.title}
             onConfirm={() => {
-              cancelJob(cancelTarget.id);
+              refreshJobs();
               setCancelTarget(null);
             }}
             onClose={() => setCancelTarget(null)}
