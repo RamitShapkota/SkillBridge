@@ -1,5 +1,5 @@
-﻿import { useState, useMemo, type ElementType } from "react";
-import { Link } from "react-router";
+﻿import { useState, useMemo, useEffect, type ElementType } from "react";
+import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
@@ -26,29 +26,57 @@ import { ApplyModal } from "../../app/components/ApplyModal";
 import { ClientInformationCard } from "../../app/components/shared/ClientInformationCard";
 import { VerificationReminderCard } from "../../app/components/shared/VerificationReminderCard";
 import { JOB_CATEGORIES, JOB_DURATION_OPTIONS, JOB_SKILL_COLORS } from "../../constants/job.constants";
+import { getAllOpenJobs, type JobData } from "../../services/jobService";
 import type { BrowseJob, JobCategoryId } from "../../types";
 
-// Dummy data
+function formatJobDate(date?: string) {
+  if (!date) return "";
 
-const JOBS: BrowseJob[] = [
-  {
-    id: "j1",
-    title: "Design a Landing Page for an EdTech Startup",
-    category: "ui-ux",
-    description:
-      "We need a clean, modern landing page designed in Figma for our online learning platform. The design must be mobile-responsive and conversion-focused. Deliverable is a full Figma prototype with all screens.",
-    skills: ["Figma", "UI/UX", "Prototyping", "Mobile Design"],
-    budget: "8,000",
-    duration: "7d",
-    deadline: "2026-06-30",
-    complexity: "medium",
-    recommended: true,
-    postedAt: "2 hours ago",
-    requirements:
-      "Please submit a portfolio of at least 2 similar landing page designs. Figma source files must be delivered.",
-  },
-];
+  const parsedDate = new Date(date);
 
+  if (Number.isNaN(parsedDate.getTime())) return "";
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDeadline(date?: string) {
+  if (!date) return "";
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return date;
+
+  return parsedDate.toISOString().split("T")[0];
+}
+
+function formatBudget(budget: string | number) {
+  const numericBudget = Number(budget);
+
+  if (Number.isNaN(numericBudget)) return String(budget);
+
+  return numericBudget.toLocaleString("en-IN");
+}
+
+function mapJobFromApi(job: JobData): BrowseJob {
+  return {
+    id: job._id ?? "",
+    title: job.title,
+    category: job.category as BrowseJob["category"],
+    status: job.status,
+    description: job.description ?? "",
+    skills: job.skills ?? [],
+    budget: formatBudget(job.budget),
+    duration: job.duration as BrowseJob["duration"],
+    deadline: formatDeadline(job.deadline),
+    complexity: (job.complexity ?? "small") as BrowseJob["complexity"],
+    postedAt: formatJobDate(job.createdAt),
+    requirements: job.requirements,
+  };
+}
 // Config
 
 const CATEGORY_CONFIG: Record<
@@ -762,10 +790,55 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
   const [complexity, setComplexity] = useState<string[]>([]);
   const [durations, setDurations] = useState<string[]>([]);
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingJobId, setPendingJobId] = useState<string | undefined>(undefined);
+  const navigate = useNavigate();
+  const [jobs, setJobs] = useState<BrowseJob[]>([]);
+  const [loading, setLoading] = useState(!isGuest);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isGuest) {
+      setJobs([]);
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadOpenJobs = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await getAllOpenJobs();
+
+        if (mounted) {
+          setJobs(response.data.map(mapJobFromApi));
+        }
+      } catch (error) {
+        if (mounted) {
+          setError(error instanceof Error ? error.message : "Failed to load jobs.");
+          setJobs([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadOpenJobs();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isGuest]);
+
+  const handleViewDetails = (jobId: string) => {
+    navigate(isGuest ? `/browse?jobId=${jobId}` : `/dashboard/student/browse-jobs?jobId=${jobId}`);
+  };
 
   const handleApply = (jobId: string) => {
     if (isGuest) {
@@ -779,7 +852,7 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
   const toggleArr = (arr: string[], setArr: (a: string[]) => void, v: string) =>
     setArr(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
-  const openJobs = useMemo(() => JOBS.filter((job) => (job.status ?? "open") === "open"), []);
+  const openJobs = useMemo(() => jobs.filter((job) => (job.status ?? "open") === "open"), [jobs]);
 
   const filtered = useMemo(() => {
     return openJobs.filter((job) => {
@@ -796,7 +869,6 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
     });
   }, [query, categories, complexity, durations, openJobs]);
 
-  const selectedJob = openJobs.find((j) => j.id === selectedId) ?? null;
   const hasFilters = query || categories.length || complexity.length || durations.length;
 
   const clearAll = () => {
@@ -942,7 +1014,32 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
           </div>
 
           {/* Job grid / list */}
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+              <motion.span
+                className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-blue-600"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              />
+              <p className="text-slate-500" style={{ fontSize: "0.85rem" }}>
+                Loading jobs...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+              <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center">
+                <Search className="w-9 h-9 text-slate-300" />
+              </div>
+              <div>
+                <p className="text-slate-900 font-bold" style={{ fontSize: "1rem" }}>
+                  {error}
+                </p>
+                <p className="text-slate-500 mt-1" style={{ fontSize: "0.85rem" }}>
+                  Please try again later.
+                </p>
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
             <EmptyState onClear={clearAll} />
           ) : (
             <AnimatePresence mode="wait">
@@ -954,7 +1051,7 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
                 transition={{ duration: 0.2 }}
                 className={
                   view === "grid"
-                    ? `grid gap-4 ${selectedJob ? "grid-cols-1 xl:grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`
+                    ? "grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
                     : "flex flex-col gap-3"
                 }
               >
@@ -964,15 +1061,15 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
                       <JobCard
                         key={job.id}
                         job={job}
-                        onView={() => setSelectedId(selectedId === job.id ? null : job.id)}
-                        selected={selectedId === job.id}
+                        onView={() => handleViewDetails(job.id)}
+                        selected={false}
                       />
                     ) : (
                       <JobCardList
                         key={job.id}
                         job={job}
-                        onView={() => setSelectedId(selectedId === job.id ? null : job.id)}
-                        selected={selectedId === job.id}
+                        onView={() => handleViewDetails(job.id)}
+                        selected={false}
                       />
                     )
                   )}
@@ -982,25 +1079,7 @@ export function BrowseJobsCore({ isGuest = false }: { isGuest?: boolean }) {
           )}
         </div>
 
-        {/* Detail panel (desktop) */}
-        <AnimatePresence>
-          {selectedJob && (
-            <JobDetailPanel
-              key={selectedJob.id}
-              job={selectedJob}
-              onClose={() => setSelectedId(null)}
-              onApply={() => handleApply(selectedJob.id)}
-            />
-          )}
-        </AnimatePresence>
       </div>
-
-      {/* Mobile modal */}
-      {selectedJob && (
-        <div className="lg:hidden">
-          <MobileDetailModal job={selectedJob} onClose={() => setSelectedId(null)} />
-        </div>
-      )}
 
       {/* Modals */}
       <AnimatePresence>
